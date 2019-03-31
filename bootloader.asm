@@ -1,98 +1,82 @@
-[bits 16]       ;Tells the assembler that its a 16 bit code
-[org 0x7C00]    ;Origin, tell the assembler that where the code will
-                ;be in memory after it is been loaded
+            [bits 16]                   ; Tells the assembler that its a 16 bit code
+            [org 0x7C00]                ; Origin, tell the assembler that where the code will 
+                                        ; be in memory after it is been loaded
 
-; graphics mode
-            mov ah, 0
-            mov al, 13h
+            mov ax, 13h                 ; Turn on graphics mode (320x200)
             int 10h 
 
-
-;INT 10 - VIDEO - SET CURSOR POSITION
-;        AH = 02h
-;        BH = page number
-;              0-3 in modes 2&3
-;              0-7 in modes 0&1
-;                0 in graphics modes
-;        DH = row (00h is top)
-;        DL = column (00h is left)
-
-            mov ah, 2
-            mov bh, 0
-            mov dh,5
-            mov dl, 10
+            mov ah, 2                   ; Set cursor position
+            mov bh, 0                   ; BH = page number (0 in graphics modes)
+            mov dh, 5                   ; row
+            mov dl, 10                  ; column
             int 10h
 
-            mov si, HelloString         ;Store string pointer to SI
-            call PrintString            ;Call print string procedure
+            mov si, message
+            call printString            ; Call print string procedure
 
+            mov al, 13                  ; color
 
-            ; color
-            mov al, 13
-
-            mov dx, 199
+            mov dx, 199                 ; row
             call horiz
 
-            mov cx, 0
+            mov cx, 0                   ; column 
             call vert
 
-            mov cx, 319
+            mov cx, 319                 ; column
             call vert
 
-            mov dx, 0
+            mov dx, 0                   ; row
             call horiz
-
-
 
             hlt
 
-; Write graphics pixel	AH=0Ch	AL = Color, BH = Page Number, CX = x, DX = y
+
+; Draw horizontal line
+; dx = row
+; al = color
 horiz:
-            mov bh, 0
-            mov ah, 0ch
-            mov cx, 320
+            mov ah, 0ch                 ; Write graphics pixel
+            mov bh, 0                   ; page number
+            mov cx, 320                 ; column
 .loop:
             int 10h
             dec cx
             jnz .loop 
             ret
 
+; Draw vertival line 
+; cx = column
+; al = color
 vert:
-            mov bh, 0
-            mov ah, 0ch
-            mov dx, 200
+            mov ah, 0ch                 ; Write graphics pixel
+            mov bh, 0                   ; page number
+            mov dx, 200                 ; row
 .loop:
             dec dx
             int 10h
             jnz .loop
             ret
-           
 
-PrintCharacter:                     ;Procedure to print character on screen
-                                    ;Assume that ASCII value is in register AL
-            mov ah, 0x0e            ;Tell BIOS that we need to print one charater on screen.
-            mov bh, 0x00            ;Page no.
-            mov bl, 0x07            ;Text attribute 0x07 is lightgrey font on black background
+; Print string on screen
+; si = string starting pointer
+printString:
+.next_character:
+            mov al, [si]            ; Get a byte from string and store in AL register
+            inc si                 
+            or al, al               ; Check if value in AL is zero (end of string)
+            jz .exit_function       ; If end then return
 
-            int 0x10                ;Call video interrupt
-            ret                     ;Return to calling procedure
+            mov ah, 0x0e            ; Print one charater
+            mov bh, 0x00            ; page numebr
+            mov bl, 0x07            ; text attribute 0x07 is lightgrey font on black background
+            int 0x10                
 
-PrintString:                        ;Procedure to print string on screen
-                                    ;Assume that string starting pointer is in register SI
+            jmp .next_character
+.exit_function:
+            ret
 
-.next_character:                    ;Lable to fetch next character from string
-            mov al, [si]            ;Get a byte from string and store in AL register
-            inc si                  ;Increment SI pointer
-            or al, al               ;Check if value in AL is zero (end of string)
-            jz .exit_function       ;If end then return
-            call PrintCharacter     ;Else print the character which is in AL register
-            jmp .next_character     ;Fetch next character from string
-.exit_function:                     ;End label
-            ret                     ;Return from procedure
+; Data
+message db 'Hello Zsofi!', 0 
 
-
-;Data
-HelloString db 'Hello Zsofi!', 0 
-
-times 510 - ($ - $$) db 0   ;Fill the rest of sector with 0
-dw 0xAA55                   ;Add boot signature at the end of bootloader
+times 510 - ($ - $$) db 0           ; Fill the rest of sector with 0
+dw 0xAA55                           ; Add boot signature at the end of bootloader
