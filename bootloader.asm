@@ -12,7 +12,7 @@
             int 10h
 
             mov si, message
-            call printString            ; Call print string procedure
+            call printStr               ; Call print string procedure
 
             mov al, 13                  ; color
 
@@ -34,12 +34,10 @@
 ; Draw horizontal line
 ; dx = row
 ; al = color
-horiz:
-            mov ah, 0ch                 ; Write graphics pixel
+horiz:      mov ah, 0ch                 ; Write graphics pixel
             mov bh, 0                   ; page number
             mov cx, 320                 ; column
-.loop:
-            int 10h
+.loop:      int 10h
             dec cx
             jnz .loop 
             ret
@@ -47,33 +45,26 @@ horiz:
 ; Draw vertival line 
 ; cx = column
 ; al = color
-vert:
-            mov ah, 0ch                 ; Write graphics pixel
+vert:       mov ah, 0ch                 ; Write graphics pixel
             mov bh, 0                   ; page number
             mov dx, 200                 ; row
-.loop:
-            dec dx
+.loop:      dec dx
             int 10h
             jnz .loop
             ret
 
 ; Print string on screen
 ; si = string starting pointer
-printString:
-.next_character:
-            mov al, [si]            ; Get a byte from string and store in AL register
+printStr:   mov al, [si]            ; Get a byte from string and store in AL register
             inc si                 
             or al, al               ; Check if value in AL is zero (end of string)
-            jz .exit_function       ; If end then return
-
+            jz .exit                ; If end then return
             mov ah, 0x0e            ; Print one charater
             mov bh, 0x00            ; page numebr
             mov bl, 0x07            ; text attribute 0x07 is lightgrey font on black background
-            int 0x10                
-
-            jmp .next_character
-.exit_function:
-            ret
+            int 0x10
+            jmp printStr
+.exit:      ret
 
 ; Data
 message db 'Hello Zsofi!', 0 
