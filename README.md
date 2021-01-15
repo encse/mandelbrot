@@ -1,6 +1,8 @@
 # Bootloader
 
-This is a trivial bootloader written in assembbly.
+This is a trivial bootloader written in assembly.
+
+![screenshot](screenshot.png)
 
 Setup requirements (mac)
 ```
