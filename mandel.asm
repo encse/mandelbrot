@@ -94,21 +94,20 @@
 ; imagepng($im);
 ; imagedestroy($im);
             ; dc1 =($max_x-$min_x)/$dim_x
-            fld qword [width]
-            fld qword [min_x]
-            fld qword [max_x]
-            fsub st0, st1
-            fdiv st0, st1
-            fstp qword [dc1]
-            
+            ; fld qword [width]
+            ; fld qword [min_x]
+            ; fld qword [max_x]
+            ; fsub st0, st1
+            ; fdiv st0, st1
+            ; fstp qword [dc1]
 
-            ; dc2 =($max_x-$min_x)/$dim_x
-            fld qword [height]
-            fld qword [min_y]
-            fld qword [max_y]
-            fsub st0, st1
-            fdiv st0, st1
-            fstp qword [dc2]
+            ; dc2 =($max_y-$min_y)/$dim_y
+            ; fld qword [height]
+            ; fld qword [min_y]
+            ; fld qword [max_y]
+            ; fsub st0, st1
+            ; fdiv st0, st1
+            ; fstp qword [dc2]
 .yloop:
             mov cx, [y]
             cmp cx, 200
@@ -125,46 +124,71 @@
             je .xloopend
 
             xor ax, ax
-            mov [z1], ax
-            mov [z2], ax
             mov [i], ax
+
+            fldz
+            fst qword [z1]
+            fst qword [z2]
+
+            ;     $c1=$min_x+($max_x-$min_x)/$dim_x*$x;
+            fild qword [x]
+            fld qword [width]
+            fld qword [min_x]
+            fld qword [max_x]
+            fsub st1
+            fdiv st2
+            fmul st3
+            fadd st1
+            fst qword [c1]
+
+            ;     $c2=$min_y+($max_y-$min_y)/$dim_y*$y;
+            fild qword [y]
+            fld qword [height]
+            fld qword [min_y]
+            fld qword [max_y]
+            fsub st1
+            fdiv st2
+            fmul st3
+            fadd st1
+            fst qword [c2]
+
 .iloop:    
             mov cx, [i]
-            cmp cx, 100
+            cmp cx, 1000
             je .iloopend
 
             ;  $new1=$z1*$z1-$z2*$z2+$c1;
-            fld  qword [z1]
-            fmul st0, st0
-            fld  qword [z2]
-            fmul st0, st0
-            fsubp st1, st0
             fld qword [c1]
-            faddp 
+            fld qword [z2]
+            fmul st0, st0
+            fld qword [z1]
+            fmul st0, st0
+            fsub st1           
+            fadd st2        
+            fst qword [new1]
 
             ; $new2=2*$z1*$z2+$c2;
-            fld  qword [const2]
-            fld  qword [z1]
-            fld  qword [z2]
-            fmulp st1
-            fmulp st1
             fld  qword [c2]
-            faddp st1
+            fld  qword [z2]
+            fld  qword [z1]
+            fld  qword [const2]
+            fmul st1
+            fmul st2
+            fadd st3
+            fst qword [new2]
 
+            fld qword [new1]
             fst qword [z1]
-            ;$z2=$new2;
+
+            fld qword [new2]
             fst qword [z2]
-            fstp st2
-
-            ;$z1=$new1;
-            fst qword [z1]
 
             ; if($z1*$z1+$z2*$z2>=4) break
-            fmul st0, st0
-            fstp st2
-            fmul st0, st0
+            fld  qword [z2]
+            fmul st0
+            fld  qword [z1]
+            fmul st0
             faddp
-
             fld qword [const4]
             fcomip
             jbe .iloopend
@@ -174,10 +198,10 @@
             jmp .iloop
 .iloopend:
 
-            mov ah, 15                 ; Write graphics pixel
+            mov al, i                   ; color
+            mov ah, 0ch                 ; Write graphics pixel
             mov cx, [x]
             mov dx, [y]
-            mov al, 13                  ; color
             mov bh, 0                   ; page number
             int 10h
 
@@ -186,20 +210,20 @@
             mov [x], cx
 
             ; c1 += dc1
-            fld qword [c1]
-            fld qword [dc1]
-            faddp st1
-            fstp qword [c1]
+            ; fld qword [c1]
+            ; fld qword [dc1]
+            ; faddp st1
+            ; fstp qword [c1]
 
             jmp .xloop
           
 .xloopend:
 
             ; c2 += dc2
-            fld qword [c2]
-            fld qword [dc2]
-            faddp st1
-            fstp qword [c2]
+            ; fld qword [c2]
+            ; fld qword [dc2]
+            ; faddp st1
+            ; fstp qword [c2]
 
             inc dx
             mov [y], dx
@@ -211,19 +235,17 @@
 .exit:      ret
 
 
-marker db 0x80,0x80
-foo dq -2.1
-new1 db 0x80,0x80
-new2 db 0x81
-dc1 dq 0
+dc1 dq 0x3F83333333333333
 c1 dq 0
-dc2 dq 0
+dc2 dq 0x3F83333333333333
 c2 dq 0
-z1 dw 0
-z2 dw 0
-x dw 0
-y dw 0
-i dw 0
+z1 dq 0
+z2 dq 0
+new1 dq 0
+new2 dq 0
+x dq 0
+y dq 0
+i dq 0
 const2 dq 2
 const4 dq 4
 
@@ -235,86 +257,86 @@ min_y dq -1;
 max_y dq 1;
 
 
-print_fixed_point:
-    push ax
-    test ax, ax
-    jns @@numbers
-    mov al, '-'
-    call print_ch
-    pop ax
-    push ax
-    neg ax
-    inc ax
-@@numbers:
-    shr ax, FRAC
-    call print_ax
-    mov al, '.'
-    call print_ch
-    pop ax
-    push ax
-    and ax, (1 << FRAC)-1
-    call print_ax
-    pop ax
-    push ax
-    mov al, 0ah
-    call print_ch
-    mov al, 0dh
-    call print_ch
-    pop ax
-    ret
+; print_fixed_point:
+;     push ax
+;     test ax, ax
+;     jns @@numbers
+;     mov al, '-'
+;     call print_ch
+;     pop ax
+;     push ax
+;     neg ax
+;     inc ax
+; @@numbers:
+;     shr ax, FRAC
+;     call print_ax
+;     mov al, '.'
+;     call print_ch
+;     pop ax
+;     push ax
+;     and ax, (1 << FRAC)-1
+;     call print_ax
+;     pop ax
+;     push ax
+;     mov al, 0ah
+;     call print_ch
+;     mov al, 0dh
+;     call print_ch
+;     pop ax
+;     ret
 
-print_ax:
-  ; assume number is in eax
-    push ax
-    mov ax, ' '
-    call print_ch
-    pop ax
-    mov cx, 0
-    mov bx, 16
+; print_ax:
+;   ; assume number is in eax
+;     push ax
+;     mov ax, ' '
+;     call print_ch
+;     pop ax
+;     mov cx, 0
+;     mov bx, 16
 
-@@loophere:
-    mov dx, 0
-    div bx
+; @@loophere:
+;     mov dx, 0
+;     div bx
 
-    ; now eax <-- eax/10
-    ;     edx <-- eax % 10
+;     ; now eax <-- eax/10
+;     ;     edx <-- eax % 10
 
-    ; print edx
-    ; this is one digit, which we have to convert to ASCII
-    ; the print routine uses edx and eax, so let's push eax
-    ; onto the stack. we clear edx at the beginning of the
-    ; loop anyway, so we don't care if we much around with it
+;     ; print edx
+;     ; this is one digit, which we have to convert to ASCII
+;     ; the print routine uses edx and eax, so let's push eax
+;     ; onto the stack. we clear edx at the beginning of the
+;     ; loop anyway, so we don't care if we much around with it
 
-    ; convert dl to ascii
-    cmp dl, 9
-    jg @@hex
-    add dl, '0'
-    jmp @@x
-@@hex:
-    add dl, 'a' - 10
-@@x:
-    push dx                         ;digits are in reversed order, must use stack
-    inc cx                          ;remember how many digits we pushed to stack
-    cmp ax, 0                       ;if ax is zero, we can quit
-    jnz @@loophere
+;     ; convert dl to ascii
+;     cmp dl, 9
+;     jg @@hex
+;     add dl, '0'
+;     jmp @@x
+; @@hex:
+;     add dl, 'a' - 10
+; @@x:
+;     push dx                         ;digits are in reversed order, must use stack
+;     inc cx                          ;remember how many digits we pushed to stack
+;     cmp ax, 0                       ;if ax is zero, we can quit
+;     jnz @@loophere
 
-@@loophere2:
-    pop ax                          ; restore digits from last to first
-    mov ah, 0x0e                    ; Print one charater
-    mov bh, 0x00                    ; page numebr
-    mov bl, 0x07                    ; text attribute 0x07 is lightgrey font on black background
-    int 0x10
-    loop @@loophere2
-    ret
+; @@loophere2:
+;     pop ax                          ; restore digits from last to first
+;     mov ah, 0x0e                    ; Print one charater
+;     mov bh, 0x00                    ; page numebr
+;     mov bl, 0x07                    ; text attribute 0x07 is lightgrey font on black background
+;     int 0x10
+;     loop @@loophere2
+;     ret
 
 
 
-print_ch:
-    mov ah, 0x0e                    ; Print one charater
-    mov bh, 0x00                    ; page numebr
-    mov bl, 0x07                    ; text attribute 0x07 is lightgrey font on black background
-    int 0x10
-    ret
+; print_ch:
+;     mov ah, 0x0e                    ; Print one charater
+;     mov bh, 0x00                    ; page numebr
+;     mov bl, 0x07                    ; text attribute 0x07 is lightgrey font on black background
+;     int 0x10
+;     ret
 
 
 
