@@ -123,15 +123,14 @@
             cmp cx, 320
             je .xloopend
 
-            xor ax, ax
-            mov [i], ax
+           
 
             fldz
             fst qword [z1]
             fst qword [z2]
 
-            ;     $c1=$min_x+($max_x-$min_x)/$dim_x*$x;
-            fild qword [x]
+            ;     $c1=$min_x+($max_x-$min_x)/$width*$x;
+            fild word [x]
             fld qword [width]
             fld qword [min_x]
             fld qword [max_x]
@@ -141,8 +140,8 @@
             fadd st1
             fst qword [c1]
 
-            ;     $c2=$min_y+($max_y-$min_y)/$dim_y*$y;
-            fild qword [y]
+            ;     $c2=$min_y+($max_y-$min_y)/$height*$y;
+            fild word [y]
             fld qword [height]
             fld qword [min_y]
             fld qword [max_y]
@@ -152,17 +151,20 @@
             fadd st1
             fst qword [c2]
 
+
+            xor ax, ax
+            mov [i], ax
 .iloop:    
             mov cx, [i]
-            cmp cx, 1000
+            cmp cx, 100
             je .iloopend
 
             ;  $new1=$z1*$z1-$z2*$z2+$c1;
             fld qword [c1]
             fld qword [z2]
-            fmul st0, st0
+            fmul st0
             fld qword [z1]
-            fmul st0, st0
+            fmul st0
             fsub st1           
             fadd st2        
             fst qword [new1]
@@ -188,9 +190,9 @@
             fmul st0
             fld  qword [z1]
             fmul st0
-            faddp
+            fadd
             fld qword [const4]
-            fcomip
+            fcomi st1
             jbe .iloopend
 
             inc cx
@@ -198,7 +200,8 @@
             jmp .iloop
 .iloopend:
 
-            mov al, i                   ; color
+            mov ax, [i]                   ; color
+            inc ax
             mov ah, 0ch                 ; Write graphics pixel
             mov cx, [x]
             mov dx, [y]
@@ -209,21 +212,9 @@
             inc cx
             mov [x], cx
 
-            ; c1 += dc1
-            ; fld qword [c1]
-            ; fld qword [dc1]
-            ; faddp st1
-            ; fstp qword [c1]
-
             jmp .xloop
           
 .xloopend:
-
-            ; c2 += dc2
-            ; fld qword [c2]
-            ; fld qword [dc2]
-            ; faddp st1
-            ; fstp qword [c2]
 
             inc dx
             mov [y], dx
@@ -235,17 +226,17 @@
 .exit:      ret
 
 
-dc1 dq 0x3F83333333333333
+x dw 0
+y dw 0
+i dw 0
+
 c1 dq 0
-dc2 dq 0x3F83333333333333
 c2 dq 0
 z1 dq 0
 z2 dq 0
 new1 dq 0
 new2 dq 0
-x dq 0
-y dq 0
-i dq 0
+
 const2 dq 2
 const4 dq 4
 
