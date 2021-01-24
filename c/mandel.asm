@@ -46,6 +46,7 @@
 
 boot_start:         
     xor     ax, ax
+    mov     ds, ax          
     mov     ss, ax          ; Set stack pointer just below bootloader
     mov     sp, 0x7c00
 
