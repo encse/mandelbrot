@@ -52,6 +52,7 @@ boot_start:
     mov     ax, 13h         ; Turn on graphics mode (320x200)
     int     10h
 
+    finit
 .yloop:         
     mov     cx, [y]
     cmp     cx, 200
@@ -70,10 +71,9 @@ boot_start:
 
     fldz
     fst     qword [z1]
-    fst     qword [z2]
+    fstp    qword [z2]
 
     ; $c1 = $min_x + ($max_x - $min_x) / $width * $x;
-    finit
     fild    word [x]
     fld     qword [width]
     fld     qword [min_x]
@@ -82,11 +82,12 @@ boot_start:
     fdiv    st2
     fmul    st3
     fadd    st1
-    fst     qword [c1]
-
+    fstp    qword [c1]
+    fstp    st0
+    fstp    st0
+    fstp    st0
 
     ; $c2 = $min_y + ($max_y - $min_y) / $height * $y;
-    finit
     fild    word [y]
     fld     qword [height]
     fld     qword [min_y]
@@ -95,7 +96,10 @@ boot_start:
     fdiv    st2
     fmul    st3
     fadd    st1
-    fst     qword [c2]
+    fstp     qword [c2]
+    fstp    st0
+    fstp    st0
+    fstp    st0
 
     xor     ax, ax
     mov     [i], ax
@@ -106,7 +110,6 @@ boot_start:
     je      .iloopend
 
     ; new1 = z1 * z1 - z2 * z2 + c1
-    finit
     fld     qword [c1]
     fld     qword [z2]
     fmul    st0
@@ -114,10 +117,11 @@ boot_start:
     fmul    st0
     fsub    st1           
     fadd    st2        
-    fst     qword [new1]
+    fstp    qword [new1]
+    fstp    st0
+    fstp    st0
 
     ; new2 = 2 * z1 * z2 + c2
-    finit
     fld     qword [c2]
     fld     qword [z2]
     fld     qword [z1]
@@ -125,28 +129,29 @@ boot_start:
     fmul    st1
     fmul    st2
     fadd    st3
-    fst     qword [new2]
+    fstp    qword [new2]
+    fstp    st0
+    fstp    st0
+    fstp    st0
 
     fld     qword [new1]
     fstp    qword [z1]
 
     fld     qword [new2]
-    fstp     qword [z2]
+    fstp    qword [z2]
 
     ; if (z1 * z1 + z2 * z2 >= 4) break
-    finit
     fld     qword [z2]
     fmul    st0
     fld     qword [z1]
     fmul    st0
     fadd
     fld     qword [const4]
+    fcomi   st1
+    fstp    st0
+    fstp    st0
+    fstp    st0
 
-    fcomi st1
-    ; fcomp   st1
-    ; fstsw   word [fpu_status]
-    ; mov     ax, [fpu_status]
-    ; sahf                        ; Store AH into Flags
     jbe     .iloopend
 
  .nexti:        
@@ -159,8 +164,9 @@ boot_start:
     mov     dx, [y]
 
     mov     ax, [i]                
-    cmp     ax, 255
+    cmp     ax, 255         ; dont set pixel
     je      .nextx
+
     mov     al, 1           ; color
     mov     ah, 0ch         ; Write graphics pixel
     mov     bh, 0           ; page number
