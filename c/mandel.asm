@@ -14,12 +14,11 @@
 ; +--------------+---+---+-----+------------------------------------+
 ; Legend: X: don't care, 0: clear, 1: set
 
-[bits 16]               ; Tells the assembler that its a 16 bit code
-[org 0x7C00]            ; Origin, tell the assembler that where the code will 
-                        ; be in memory after it is been loaded
-[cpu 8086]
+[bits 16]              
+[org 0x7c00]          
 %include "bpb.inc"
 
+data:
     x       dw 0
     y       dw 0
     i       dw 0
@@ -74,6 +73,7 @@ boot_start:
     fst     qword [z2]
 
     ; $c1 = $min_x + ($max_x - $min_x) / $width * $x;
+    finit
     fild    word [x]
     fld     qword [width]
     fld     qword [min_x]
@@ -84,7 +84,9 @@ boot_start:
     fadd    st1
     fst     qword [c1]
 
+
     ; $c2 = $min_y + ($max_y - $min_y) / $height * $y;
+    finit
     fild    word [y]
     fld     qword [height]
     fld     qword [min_y]
@@ -104,6 +106,7 @@ boot_start:
     je      .iloopend
 
     ; new1 = z1 * z1 - z2 * z2 + c1
+    finit
     fld     qword [c1]
     fld     qword [z2]
     fmul    st0
@@ -114,6 +117,7 @@ boot_start:
     fst     qword [new1]
 
     ; new2 = 2 * z1 * z2 + c2
+    finit
     fld     qword [c2]
     fld     qword [z2]
     fld     qword [z1]
@@ -124,12 +128,13 @@ boot_start:
     fst     qword [new2]
 
     fld     qword [new1]
-    fst     qword [z1]
+    fstp    qword [z1]
 
     fld     qword [new2]
-    fst     qword [z2]
+    fstp     qword [z2]
 
     ; if (z1 * z1 + z2 * z2 >= 4) break
+    finit
     fld     qword [z2]
     fmul    st0
     fld     qword [z1]
@@ -137,11 +142,11 @@ boot_start:
     fadd
     fld     qword [const4]
 
-    ;fcompi st1
-    fcomp   st1
-    fstsw   word [fpu_status]
-    mov     ax, [fpu_status]
-    sahf                        ; Store AH into Flags
+    fcomi st1
+    ; fcomp   st1
+    ; fstsw   word [fpu_status]
+    ; mov     ax, [fpu_status]
+    ; sahf                        ; Store AH into Flags
     jbe     .iloopend
 
  .nexti:        
@@ -173,8 +178,6 @@ boot_start:
     jmp     .yloop
 
 .yloopend:
-    ; mov ax, 03h                   ; text mode 80x25
-    ; int 10h
 
 .exit:      
     hlt                             ; Halt processor until next interrupt
