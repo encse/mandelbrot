@@ -1,4 +1,5 @@
 ; https://en.wikibooks.org/wiki/X86_Assembly/Floating_Point
+; https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-1-manual.pdf
 ; https://rosettacode.org/wiki/Mandelbrot_set#Pascal
 ; https://www.felixcloutier.com/x86/index.html
 
@@ -14,40 +15,40 @@
 ; +--------------+---+---+-----+------------------------------------+
 ; Legend: X: don't care, 0: clear, 1: set
 
-[bits 16]              
-[org 0x7c00]          
+bits 16            
+org 0x7c00
 %include "bpb.inc"
 
 data:
-    x       dw 0
-    y       dw 0
-    i       dw 0
+    x           dw 0
+    y           dw 0
+    i           dw 0
 
-    c1      dq 0.0
-    c2      dq 0.0
-    z1      dq 0.0
-    z2      dq 0.0
-    new1    dq 0.0
-    new2    dq 0.0
+    c1          dq 0.0
+    c2          dq 0.0
+    z1          dq 0.0
+    z2          dq 0.0
+    tmp         dq 0.0
 
-    const2  dq 2.0
-    const4  dq 4.0
+    const2      dq 2.0
+    const4      dq 4.0
 
-    width   dq 320.0
-    height  dq 200.0
-    min_x   dq -2.0
-    max_x   dq 1.0
-    min_y   dq -1.0
-    max_y   dq 1.0
-
-    fpu_status  dw 0
+    width       dq 320.0
+    height      dq 200.0
+    min_x       dq -2.0
+    max_x       dq 1.0
+    min_y       dq -1.0
+    max_y       dq 1.0
               
+    VGA         dw 0xa000
+    screen_ptr  dw 0x0000
 
 boot_start:         
     xor     ax, ax
     mov     ds, ax          
     mov     ss, ax          ; Set stack pointer just below bootloader
     mov     sp, 0x7c00
+    mov     es, word [VGA]
 
     mov     ax, 13h         ; Turn on graphics mode (320x200)
     int     10h
@@ -109,7 +110,7 @@ boot_start:
     cmp     cx, 255
     je      .iloopend
 
-    ; new1 = z1 * z1 - z2 * z2 + c1
+    ; tmp = z1 * z1 - z2 * z2 + c1
     fld     qword [c1]
     fld     qword [z2]
     fmul    st0
@@ -117,11 +118,11 @@ boot_start:
     fmul    st0
     fsub    st1           
     fadd    st2        
-    fstp    qword [new1]
+    fstp    qword [tmp]
     fstp    st0
     fstp    st0
 
-    ; new2 = 2 * z1 * z2 + c2
+    ; z2 = 2 * z1 * z2 + c2
     fld     qword [c2]
     fld     qword [z2]
     fld     qword [z1]
@@ -129,16 +130,13 @@ boot_start:
     fmul    st1
     fmul    st2
     fadd    st3
-    fstp    qword [new2]
-    fstp    st0
-    fstp    st0
-    fstp    st0
-
-    fld     qword [new1]
-    fstp    qword [z1]
-
-    fld     qword [new2]
     fstp    qword [z2]
+    fstp    st0
+    fstp    st0
+    fstp    st0
+
+    fld     qword [tmp]
+    fstp    qword [z1]
 
     ; if (z1 * z1 + z2 * z2 >= 4) break
     fld     qword [z2]
@@ -163,24 +161,27 @@ boot_start:
     mov     cx, [x]
     mov     dx, [y]
 
+    mov     di, [screen_ptr]
     mov     ax, [i]                
     cmp     ax, 255         ; dont set pixel
-    je      .nextx
+    je      .nextdi
+    mov     byte [es:di], al
 
-    mov     al, 1           ; color
-    mov     ah, 0ch         ; Write graphics pixel
-    mov     bh, 0           ; page number
-    int     10h
-
-.nextx:         
+.nextdi:         
+    inc     di
+    mov     [screen_ptr], di
+    
+.nextx:
     inc     cx
     mov     [x], cx
     jmp     .xloop
 
 .xloopend:      
 .nexty:         
-    inc     dx
-    mov     [y], dx
+    mov     ax, [y]
+    inc     ax
+    mov     [y], ax
+
     jmp     .yloop
 
 .yloopend:
