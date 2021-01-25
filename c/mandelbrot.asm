@@ -1,6 +1,21 @@
-    jmp     main
+    mov     ax, 13h         ; Turn on graphics mode (320x200)
+    int     10h
 
-    x:           dw 0
+    call    init_palette
+
+    mov     ax, 15
+    call    draw_mandelbrot
+    mov     ax, 100
+    call    draw_mandelbrot
+    mov     ax, 255
+    call    draw_mandelbrot
+
+    call    terminate
+
+draw_mandelbrot:
+    jmp         start
+
+    x           dw 0
     y           dw 0
     i           dw 0
 
@@ -15,6 +30,7 @@
 
     width       dq 320.0
     height      dq 200.0
+
     min_x       dq -2.0
     max_x       dq 1.0
     min_y       dq -1.0
@@ -23,18 +39,18 @@
     VGA         dw 0xa000
     screen_ptr  dw 0x0000
 
-    loop_count  EQU 255
+    loop_count  dw 0
 
-main:         
+start:
+
+    mov     [loop_count], ax
+    mov     [screen_ptr], word 0
+    mov     [x], word 0
+    mov     [y], word 0
     xor     ax, ax
     mov     ds, ax          
     mov     es, word [VGA]
-
-    mov     ax, 13h         ; Turn on graphics mode (320x200)
-    int     10h
-
-    call init_palette
-
+    
     finit
 .yloop:         
     mov     cx, [y]
@@ -89,7 +105,7 @@ main:
 
 .iloop:         
     mov     cx, [i]
-    cmp     cx, loop_count
+    cmp     cx, [loop_count]
     je      .iloopend
 
     ; tmp = z1 * z1 - z2 * z2 + c1
@@ -145,11 +161,8 @@ main:
 
     mov     di, [screen_ptr]
     mov     ax, [i]                
-    cmp     ax, loop_count         ; dont set pixel
-    je      .nextdi
+    cmp     ax, [loop_count]         
     mov     byte [es:di], al
-
-.nextdi:         
     inc     di
     mov     [screen_ptr], di
     
@@ -168,23 +181,23 @@ main:
 
 .yloopend:
 
-    call    terminate
+    ret
   
     
 
 init_palette:
-;; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
-;; INT 10H 1010H: Set One DAC Color Register
-;; Expects: AX    1010H
-;;          BX    color register to set (0-255)
-;;          CH    green value (00H-3fH)
-;;          CL    blue value  (00H-3fH)
-;;          DH    red value   (00H-3fH)
+    ;; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
+    ;; INT 10H 1010H: Set One DAC Color Register
+    ;; Expects: AX    1010H
+    ;;          BX    color register to set (0-255)
+    ;;          CH    green value (00H-3fH)
+    ;;          CL    blue value  (00H-3fH)
+    ;;          DH    red value   (00H-3fH)
 
     xor     bx, bx
     xor     dx, dx
 
-.loop1
+.loop1:
     mov     ax, bx
     add     ax, bx
     mov     dh, al
@@ -195,9 +208,9 @@ init_palette:
     int     10h
     inc     bx
     cmp     bx, 128
-    jl .loop1
+    jl      .loop1
 
-.loop2
+.loop2:
     mov     ax, 512
     sub     ax, bx
     sub     ax, bx
@@ -216,8 +229,6 @@ init_palette:
     ret
 
 
-;;
-;; Fill the rest with 0	
-;;
-    times 8192 - ($ - $$) db 0      
+; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    times   8192 - ($ - $$) db 0      
   

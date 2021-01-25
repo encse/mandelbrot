@@ -87,5 +87,9 @@ terminate:
     hlt
     jmp     terminate  
 
-    times 510 - ($ - $$) db 0   ;Fill the rest of sector with 0	times 510 - ($ - $$) db 0           
-    dw 0xAA55                   ;Add boot signature at the end of bootloader 
+
+; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    times   510 - ($ - $$) db 0   ;Fill the rest of sector with 0
+    dw      0xAA55                ;Add boot signature at the end of bootloader 
+
