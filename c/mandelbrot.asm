@@ -1,5 +1,6 @@
-data:
-    x           dw 0
+    jmp     main
+
+    x:           dw 0
     y           dw 0
     i           dw 0
 
@@ -22,14 +23,17 @@ data:
     VGA         dw 0xa000
     screen_ptr  dw 0x0000
 
-mandel_start:         
+    loop_count  EQU 255
+
+main:         
     xor     ax, ax
     mov     ds, ax          
-   
     mov     es, word [VGA]
 
     mov     ax, 13h         ; Turn on graphics mode (320x200)
     int     10h
+
+    call init_palette
 
     finit
 .yloop:         
@@ -85,7 +89,7 @@ mandel_start:
 
 .iloop:         
     mov     cx, [i]
-    cmp     cx, 255
+    cmp     cx, loop_count
     je      .iloopend
 
     ; tmp = z1 * z1 - z2 * z2 + c1
@@ -141,7 +145,7 @@ mandel_start:
 
     mov     di, [screen_ptr]
     mov     ax, [i]                
-    cmp     ax, 255         ; dont set pixel
+    cmp     ax, loop_count         ; dont set pixel
     je      .nextdi
     mov     byte [es:di], al
 
@@ -164,9 +168,56 @@ mandel_start:
 
 .yloopend:
 
-.exit:      
-    hlt                             ; Halt processor until next interrupt
-    jmp     .exit
+    call    terminate
   
-    times 8192 - ($ - $$) db 0      ;Fill the rest of sector with 0	times 510 - ($ - $$) db 0           
+    
+
+init_palette:
+;; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
+;; INT 10H 1010H: Set One DAC Color Register
+;; Expects: AX    1010H
+;;          BX    color register to set (0-255)
+;;          CH    green value (00H-3fH)
+;;          CL    blue value  (00H-3fH)
+;;          DH    red value   (00H-3fH)
+
+    xor     bx, bx
+    xor     dx, dx
+
+.loop1
+    mov     ax, bx
+    add     ax, bx
+    mov     dh, al
+    mov     ch, al
+    mov     cl, al
+
+    mov     ax, 1010h
+    int     10h
+    inc     bx
+    cmp     bx, 128
+    jl .loop1
+
+.loop2
+    mov     ax, 512
+    sub     ax, bx
+    sub     ax, bx
+
+    mov     dh, al
+    mov     ch, al
+    mov     cl, al
+    sub     cl, 128
+
+    mov     ax, 1010h
+    int     10h
+    inc     bx
+    cmp     bx, 256
+    jl      .loop2
+
+    ret
+
+
+;;
+;; Fill the rest with 0	
+;;
+    times 8192 - ($ - $$) db 0      
   

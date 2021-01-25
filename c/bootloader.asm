@@ -8,26 +8,28 @@ global bpb_disk_info
 
 bpb_disk_info:
     ; Dos 4.0 EBPB 1.44MB floppy
-    OEMname:           db    "csokavar.hu"
-    bytesPerSector:    dw    512
-    sectPerCluster:    db    1
-    reservedSectors:   dw    1
-    numFAT:            db    2
-    numRootDirEntries: dw    224
-    numSectors:        dw    2880
-    mediaType:         db    0xf0
-    numFATsectors:     dw    9
-    sectorsPerTrack:   dw    18
-    numHeads:          dw    2
-    numHiddenSectors:  dd    0
-    numSectorsHuge:    dd    0
-    driveNum:          db    0
-    reserved:          db    0
-    signature:         db    0x29
-    volumeID:          dd    0x2d7e5a1a
-    volumeLabel:       db    "MANDELBROT"
-    fileSysType:       db    "FAT12   "
+    OEMname:           db "csokavar.hu"
+    bytesPerSector:    dw 512
+    sectPerCluster:    db 1
+    reservedSectors:   dw 1
+    numFAT:            db 2
+    numRootDirEntries: dw 224
+    numSectors:        dw 2880
+    mediaType:         db 0xf0
+    numFATsectors:     dw 9
+    sectorsPerTrack:   dw 18
+    numHeads:          dw 2
+    numHiddenSectors:  dd 0
+    numSectorsHuge:    dd 0
+    driveNum:          db 0
+    reserved:          db 0
+    signature:         db 0x29
+    volumeID:          dd 0x2d7e5a1a
+    volumeLabel:       db "MANDELBROT "
+    fileSysType:       db "FAT12   "
 
+
+    DISK_READ_ERROR    db `DISK_READ_ERROR\r\n`, 0
 
 boot_start:  
     xor     ax, ax
@@ -37,11 +39,11 @@ boot_start:
     mov     sp, 0x7c00
 
     ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH=02h:_Read_Sectors_From_Drive
-    adr_main     EQU 0x7e00
-    sector_count EQU 2
-    start_sector EQU 2
+    main_start      EQU 0x7e00
+    sector_count    EQU 15
+    start_sector    EQU 2
 
-    mov     bx, adr_main        ; es:bx contains the buffer address
+    mov     bx, main_start      ; es:bx contains the buffer address
 	mov     dh, 0x00            ; head number
                                 ; dl contains the drive number (set by bios)
 	mov     ah, 0x02            ; 2 for reading
@@ -55,12 +57,12 @@ boot_start:
 	cmp     al, sector_count
 	jne     .disk_read_error
 
-    jmp     mandel_start
+    jmp     main_start
 
 .disk_read_error:
 	mov     bx, DISK_READ_ERROR
 	call    print_string
-    jmp abort
+    call    terminate 
 
 print_string:
     pusha
@@ -81,11 +83,9 @@ print_string:
     popa
     ret
 
-abort:
+terminate:
     hlt
-    jmp     abort  
-
-    DISK_READ_ERROR db `DISK_READ_ERROR\r\n`, 0
+    jmp     terminate  
 
     times 510 - ($ - $$) db 0   ;Fill the rest of sector with 0	times 510 - ($ - $$) db 0           
     dw 0xAA55                   ;Add boot signature at the end of bootloader 
