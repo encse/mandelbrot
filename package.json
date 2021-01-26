@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "compile": "cd c; nasm mandel.asm -fbin -o boot.bin; cd -",
-    "start-qemu": "qemu-system-i386 -drive format=raw,file=c/boot.bin",
+    "start-qemu": "qemu-system-x86_64 -M accel=hvf -drive format=raw,file=boot.bin",
     "dosbox": "open -n dosbox.app --args -c \"mount c `pwd`/c\" -c 'set PATH=C:\\NC;c:\\borlandc\\bin\\;%PATH%' -c c:",
     "make-com": "cp c/boot.bin c/mandel.com",
     "make-img": "dd if=/dev/zero of=c/boot.img bs=1024 count=1440; dd if=c/boot.bin of=c/boot.img conv=notrunc",

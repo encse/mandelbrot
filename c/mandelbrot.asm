@@ -3,11 +3,9 @@
 
     call    init_palette
 
-    mov     ax, 15
-    call    draw_mandelbrot
-    mov     ax, 100
-    call    draw_mandelbrot
-    mov     ax, 255
+    call    mouse_start
+
+    mov     ax, 250
     call    draw_mandelbrot
 
     call    terminate
@@ -36,7 +34,6 @@ draw_mandelbrot:
     min_y       dq -1.0
     max_y       dq 1.0
               
-    VGA         dw 0xa000
     screen_ptr  dw 0x0000
 
     loop_count  dw 0
@@ -48,8 +45,9 @@ start:
     mov     [x], word 0
     mov     [y], word 0
     xor     ax, ax
-    mov     ds, ax          
-    mov     es, word [VGA]
+    mov     ds, ax       
+    push    VGA
+    pop     es   
     
     finit
 .yloop:         
@@ -161,7 +159,11 @@ start:
 
     mov     di, [screen_ptr]
     mov     ax, [i]                
-    cmp     ax, [loop_count]         
+
+    cmp     ax, [loop_count]         ; if loop_count is reached, set the color to 0 (black)
+    jl      .j1
+    xor     ax, ax
+.j1:    
     mov     byte [es:di], al
     inc     di
     mov     [screen_ptr], di
@@ -200,7 +202,7 @@ init_palette:
 .loop1:
     mov     ax, bx
     add     ax, bx
-    mov     dh, al
+    mov     dh, 0
     mov     ch, al
     mov     cl, al
 
@@ -228,7 +230,4 @@ init_palette:
 
     ret
 
-
-; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    times   8192 - ($ - $$) db 0      
-  
+   

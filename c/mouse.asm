@@ -6,44 +6,36 @@ MOUSE_RESOLUTION equ 3          ; Mouse resolution 8 counts/mm
 
 VIDEO_MODE       equ 0x13
 
-bits 16
-cpu 8086
-ORG 0x7c00
+mouse_start:
 
-; Include a BPB (1.44MB floppy with FAT12) to be more compatible with USB floppy media
-%include "bpb.inc"
+    ;; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
+    ;; INT 10H 1010H: Set One DAC Color Register
+    ;; Expects: AX    1010H
+    ;;          BX    color register to set (0-255)
+    ;;          CH    green value (00H-3fH)
+    ;;          CL    blue value  (00H-3fH)
+    ;;          DH    red value   (00H-3fH)
 
-boot_start:
-    xor ax, ax                  ; DS=SS=ES=0
-    mov ds, ax
-    mov ss, ax                  ; Stack at 0x0000:0x7c00
-    mov sp, 0x7c00
-    cld                         ; Set string instructions to use forward movement
+    mov     bx, 254
+    mov     dh, 255
+    mov     ch, 255
+    mov     cl, 255
 
-    ; FAR JMP to ensure set CS to 0
-    jmp 0x0000:.setcs
-.setcs:
+    mov     ax, 1010h
+    int     10h
 
-    mov ax, VIDEO_MODE
-    int 0x10                    ; Set video mode
+    mov     bx, 253
+    mov     dh, 255
+    mov     ch, 255
+    mov     cl, 255
+
+    mov     ax, 1010h
+    int     10h
+
 
     call mouse_initialize
-    jc .no_mouse                ; If CF set then error, inform user and end
     call mouse_enable           ; Enable the mouse
-
-    sti
-.main_loop:
-    hlt                         ; Halt processor until next interrupt
-    call poll_mouse             ; Poll mouse and update display with coordintes & status
-    jmp .main_loop              ; Endless main loop
-
-.no_mouse:
-    mov si, noMouseMsg          ; Error enabling mouse
-    call print_string           ; Display message and enter infinite loop
-
-.err_loop:
-    hlt
-    jmp .err_loop
+    ret
 
 ; Function: mouse_initialize
 ;           Initialize the mouse if present
@@ -160,9 +152,13 @@ mouse_callback:
     push bx
     push cx
     push dx
+    push es
+    push di
 
     push cs
     pop ds                      ; DS = CS, CS = where our variables are stored
+
+    call hide_cursor 
 
     mov al,[bp+ARG_OFFSETS+6]
     mov bl, al                  ; BX = copy of status byte
@@ -174,6 +170,7 @@ mouse_callback:
     mov dl, [bp+ARG_OFFSETS+2]  ; CX = movementY
     mov al, [bp+ARG_OFFSETS+4]  ; AX = movementX
 
+
     ; new mouse X_coord = X_Coord + movementX
     ; new mouse Y_coord = Y_Coord + (-movementY)
     neg dx
@@ -182,11 +179,35 @@ mouse_callback:
     mov cx, [mouseX]
     add ax, cx                  ; AX = new mouse X_coord
 
+
     ; Status
     mov [curStatus], bl         ; Update the current status with the new bits
+    cmp ax, 0
+    jge .j1
+    mov ax, 0
+.j1:
+    cmp ax, 319
+    jle .j2
+    mov ax, 319
+.j2:
+
+    cmp dx, 0
+    jge .j3
+    mov dx, 0
+.j3:
+    cmp dx, 199
+    jle .j4
+    mov dx, 199
+.j4:
+
+
     mov [mouseX], ax            ; Update current virtual mouseX coord
     mov [mouseY], dx            ; Update current virtual mouseY coord
 
+    call draw_cursor
+
+    pop di
+    pop es
     pop dx                      ; Restore all modified registers
     pop cx
     pop bx
@@ -197,151 +218,103 @@ mouse_callback:
 mouse_callback_dummy:
     retf                        ; This routine was reached via FAR CALL. Need a FAR RET
 
-; Function: poll_mouse
-;           Poll the mouse state and display the X and Y coordinates and the status byte
-;
-; Inputs:   None
-; Returns:  None
-; Clobbers: None
+hide_cursor:
+    pusha
+    push es
+    push VGA
+    pop es
+    mov ax, [mouseY]
+    mov cx, 320
+    mul cx
+    add ax, [mouseX]
+    mov di, ax
+    mov si, 0
+    
+    mov ax, 0
+    mov bx, 0
+.loop:
+    
+    mov cl, byte [areaUnderCursor + si]
+    mov byte [es:di], cl
 
-poll_mouse:
-    push ax
-    push bx
-    push dx
+    inc si
+    inc di
+    inc bx
+    cmp bx, cursorWidth
+    jl .loop
+    xor bx, bx
 
-    mov bx, 0x0002              ; Set display page to 0 (BH) and color green (BL)
+    add di, 320 - cursorWidth
+    inc ax
+    cmp ax, cursorHight
+    jl .loop
 
-    cli
-    mov ax, [mouseX]            ; Retrieve current mouse coordinates. Disable interrupts
-    mov dx, [mouseY]            ; So that these two variables are read atomically
-    sti
-
-    call print_word_hex         ; Print the mouseX coordinate
-    mov si, delimCommaSpc
-    call print_string
-
-    mov ax, dx
-    call print_word_hex         ; Print the mouseY coordinate
-    mov si, delimCommaSpc
-    call print_string
-
-    mov al, [curStatus]
-    call print_byte_hex         ; Print the last read mouse state byte
-
-    mov al, 0x0d
-    call print_char             ; Print carriage return to return to beginning of line
-
-    pop dx
-    pop bx
-    pop ax
+    pop es
+    popa
     ret
 
-; Function: print_string
-;           Display a string to the console on the specified page and in a
-;           specified color if running in a graphics mode
-;
-; Inputs:   SI = Offset of address to print
-;           BH = Page number
-;           BL = foreground color (graphics modes only)
-; Clobbers: SI
+draw_cursor:
+    pusha
+    push es
+    push VGA
+    pop es
+    mov ax, [mouseY]
+    mov cx, 320
+    mul cx
+    add ax, [mouseX]
+    mov di, ax
+    mov si, 0
+    
+    mov ax, 0
+    mov bx, 0
+.loop:
+    
+    mov cl, byte [es:di]
+    mov byte [areaUnderCursor + si], cl
 
-print_string:
-    push ax
-    mov ah, 0x0e                ; BIOS TTY Print
-    jmp .getch
-.repeat:
-    int 0x10                    ; print character
-.getch:
-    lodsb                       ; Get character from string
-    test al,al                  ; Have we reached end of string?
-    jnz .repeat                 ;     if not process next character
-.end:
-    pop ax
+
+    mov cl, byte [cursorShape + si]
+    cmp cl, 0
+    jz .afterDraw
+    mov byte [es:di], cl
+
+.afterDraw
+
+    inc si
+    inc di
+    inc bx
+    cmp bx, cursorWidth
+    jl .loop
+    xor bx, bx
+
+    add di, 320 - cursorWidth
+    inc ax
+    cmp ax, cursorHight
+    jl .loop
+
+    pop es
+    popa
     ret
 
-; Function: print_char
-;           Print character on specified page and in a specified color
-;           if running in a graphics mode
-;
-; Inputs:   AL = Character to print
-;           BH = Page number
-;           BL = foreground color (graphics modes only)
-; Returns:  None
-; Clobbers: AX
 
-print_char:
-    mov ah, 0x0e                ; TTY function to display character in AL
-    int 0x10                    ; Make BIOS call
-    ret
-
-; Function: print_word_hex
-;           Print a 16-bit unsigned integer in hexadecimal on specified
-;           page and in a specified color if running in a graphics mode
-;
-; Inputs:   AX = Unsigned 16-bit integer to print
-;           BH = Page number
-;           BL = foreground color (graphics modes only)
-; Returns:  None
-; Clobbers: Mone
-
-print_word_hex:
-    xchg al, ah                 ; Print the high byte first
-    call print_byte_hex
-    xchg al, ah                 ; Print the low byte second
-    call print_byte_hex
-    ret
-
-; Function: print_byte_hex
-;           Print a 8-bit unsigned integer in hexadecimal on specified
-;           page and in a specified color if running in a graphics mode
-;
-; Inputs:   AL = Unsigned 8-bit integer to print
-;           BH = Page number
-;           BL = foreground color (graphics modes only)
-; Returns:  None
-; Clobbers: Mone
-
-print_byte_hex:
-    push ax
-    push cx
-    push bx
-
-    lea bx, [.table]            ; Get translation table address
-
-    ; Translate each nibble to its ASCII equivalent
-    mov ah, al                  ; Make copy of byte to print
-    and al, 0x0f                ;     Isolate lower nibble in AL
-    mov cl, 4
-    shr ah, cl                  ; Isolate the upper nibble in AH
-    xlat                        ; Translate lower nibble to ASCII
-    xchg ah, al
-    xlat                        ; Translate upper nibble to ASCII
-
-    pop bx                      ; Restore attribute and page
-    mov ch, ah                  ; Make copy of lower nibble
-    mov ah, 0x0e
-    int 0x10                    ; Print the high nibble
-    mov al, ch
-    int 0x10                    ; Print the low nibble
-
-    pop cx
-    pop ax
-    ret
-.table: db "0123456789ABCDEF", 0
-
-; Uncomment these lines if not using a BPB (via bpb.inc)
-; numHeads:        dw 2         ; 1.44MB Floppy has 2 heads & 18 sector per track
-; sectorsPerTrack: dw 18
-
-align 2
 mouseX:       dw 0              ; Current mouse X coordinate
 mouseY:       dw 0              ; Current mouse Y coordinate
 curStatus:    db 0              ; Current mouse status
 noMouseMsg:   db "Error setting up & initializing mouse", 0x0d, 0x0a, 0
-delimCommaSpc:db ", ", 0
 
-bootDevice:   db 0x00
+cursorShape:
+    db 253,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    cursorWidth equ $ - cursorShape
+	db 253, 253,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	db 253, 254, 253,   0,   0,   0,   0,   0,   0,   0,   0,
+	db 253, 254, 254, 253,   0,   0,   0,   0,   0,   0,   0,
+	db 253, 254, 254, 253, 253,   0,   0,   0,   0,   0,   0,
+	db 253, 253, 253,   0,   0,   0,   0,   0,   0,   0,   0,
+	db 253,   0, 253, 253,   0,   0,   0,   0,   0,   0,   0,
+	db   0,   0, 253, 253,   0,   0,   0,   0,   0,   0,   0
+  
+    cursorHight equ ($ - cursorShape) / cursorWidth
 
-; Pad boot sector to 510 bytes and add 2 byte boot signature for 512 total bytes
-TIMES 510-($-$$) db  0
-dw 0xaa55
+areaUnderCursor:
+    times   cursorHight * cursorWidth db 0    
+

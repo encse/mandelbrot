@@ -35,8 +35,12 @@ boot_start:
     xor     ax, ax
     mov     ds, ax          
     mov     es, ax
-    mov     ss, ax          ; Set stack pointer just below bootloader
+    mov     ss, ax              ; Set stack pointer just below bootloader
     mov     sp, 0x7c00
+
+    cld                         ; Set string instructions to use forward movement
+    jmp     0x0000:.setcs       ; FAR JMP to ensure set CS to 0
+.setcs:
 
     ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH=02h:_Read_Sectors_From_Drive
     main_start      EQU 0x7e00
