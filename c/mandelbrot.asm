@@ -1,3 +1,4 @@
+ mandelbrot_module:
     mov     ax, 13h         ; Turn on graphics mode (320x200)
     int     10h
 
@@ -5,9 +6,13 @@
 
     call    mouse_start
 
-    push    160
-    push    100
+.loop:
     call    draw_mandelbrot
+    
+    push    161
+    push    100
+    call    handle_zoom
+    jmp     .loop
 
     call    terminate
 
@@ -24,8 +29,8 @@
     const1       dq 1.0
     const2       dq 2.0
     const4       dq 4.0
-    zoom         dq 4.0
-    zoom_half    dq 2.0
+    
+
     width        dq 320.0
     height       dq 200.0
 
@@ -33,6 +38,8 @@
     world_y      dq -1.0
     world_width  dq 3.2
     world_height dq 2.0
+
+    zoom         dq 1.0
 
     screen_ptr  dw 0x0000
 
@@ -45,8 +52,7 @@ handle_zoom:
 
     finit
 
-    ; world_x =  world_x +  (world_width * mouse_x / width) - (world_width / 10 / 2)
-
+    ; world_x =  world_x +  (world_width * mouse_x / width) - (world_width / zoom / 2)
     fld     qword [world_x]
     fld     qword [width]
     fild    word [bp + 6]
@@ -55,6 +61,8 @@ handle_zoom:
     fdiv    st2
     fadd    st3
     fld     qword [zoom]
+    fld     qword [const2]
+    fmulp   st1
     fld     qword [world_width]
     fdiv    st1
     fsubr   st2
@@ -65,14 +73,14 @@ handle_zoom:
     fstp    st0
     fstp    st0
     
-    ; ; ; world_width = world_width / 10 
-    fld     qword [zoom_half]
+    ; ; ; world_width = world_width / zoom 
+    fld     qword [zoom]
     fld     qword [world_width]
     fdiv    st1
     fstp    qword [world_width]
     fstp    st0
 
-    ; ; world_y =  world_y +  (world_height * mouse_y / height) - (world_height / 10 / 2)
+    ; ; world_y =  world_y +  (world_height * mouse_y / height) - (world_height / zoom / 2)
     fld     qword [world_y]
     fld     qword [height]
     fild    word [bp + 4]
@@ -81,6 +89,8 @@ handle_zoom:
     fdiv    st2
     fadd    st3
     fld     qword [zoom]
+    fld     qword [const2]
+    fmulp   st1
     fld     qword [world_height]
     fdiv    st1
     fsubr   st2
@@ -92,7 +102,7 @@ handle_zoom:
     fstp    st0
     
     ; world_height = world_height / 10 
-    fld     qword [zoom_half]
+    fld     qword [zoom]
     fld     qword [world_height]
     fdiv    st1
     fstp    qword [world_height]
@@ -106,11 +116,6 @@ draw_mandelbrot:
     push    sp
     mov     bp, sp
     
-
-    push    200     ; x
-    push    50     ; y
-
-    call    handle_zoom
     finit
 
     mov     [screen_ptr], word 0
