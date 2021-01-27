@@ -1,5 +1,5 @@
  mandelbrot_module:
-    mov     ax, 13h         ; Turn on graphics mode (320x200)
+    mov     ax, 13h                 ; Turn on graphics mode (320x200)
     int     10h
 
     call    init_palette
@@ -8,16 +8,37 @@
 .loop:
     call    draw_mandelbrot
 
-.waitClick
+.waitClick:
     hlt
+
     mov     al, [curStatus]
-    cmp     al, 9               ; left click    0a -> right click
-    jne     .waitClick  
-    push    word [mouseX]
-    push    word [mouseY]
+    cmp     al, 0x9              
+    jne    .l1  
+    push    dword [zoom + 4]        ; left click  
+    push    dword [zoom]   
+    push    word  [mouseY]
+    push    word  [mouseX]       
+    call    handle_zoom
+    jmp     .loop
+.l1:
+    cmp     al, 0xa
+    jne    .waitClick               ; right click
+    push    dword [unzoom + 4]            
+    push    dword [unzoom]   
+    push    word  [mouseY]
+    push    word  [mouseX]
     call    handle_zoom
     jmp     .loop
     
+
+; Function: handle_zoom
+;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor 
+; Inputs:   SP+4   = x
+;           SP+6   = y
+;           SP+8   = zoom
+; Returns:  None
+; Clobbers: None
+
 handle_zoom:
     push    sp          
     mov     bp, sp
@@ -27,12 +48,12 @@ handle_zoom:
     ; world_x =  world_x +  (world_width * mouse_x / width) - (world_width / zoom / 2)
     fld     qword [world_x]
     fld     qword [width]
-    fild    word [bp + 6]
+    fild    word [bp + 4]
     fld     qword [world_width] 
     fmul    st1
     fdiv    st2
     fadd    st3
-    fld     qword [zoom]
+    fld     qword [bp + 8]
     fld     qword [const2]
     fmulp   st1
     fld     qword [world_width]
@@ -46,7 +67,7 @@ handle_zoom:
     fstp    st0
     
     ; ; ; world_width = world_width / zoom 
-    fld     qword [zoom]
+    fld     qword [bp + 8]
     fld     qword [world_width]
     fdiv    st1
     fstp    qword [world_width]
@@ -55,12 +76,12 @@ handle_zoom:
     ; ; world_y =  world_y +  (world_height * mouse_y / height) - (world_height / zoom / 2)
     fld     qword [world_y]
     fld     qword [height]
-    fild    word [bp + 4]
+    fild    word [bp + 6]
     fld     qword [world_height]
     fmul    st1
     fdiv    st2
     fadd    st3
-    fld     qword [zoom]
+    fld     qword [bp + 8]
     fld     qword [const2]
     fmulp   st1
     fld     qword [world_height]
@@ -74,14 +95,22 @@ handle_zoom:
     fstp    st0
     
     ; world_height = world_height / 10 
-    fld     qword [zoom]
+    fld     qword [bp + 8]
     fld     qword [world_height]
     fdiv    st1
     fstp    qword [world_height]
     fstp    st0
 
     pop     sp
-    ret
+    retn    8
+
+
+    
+; Function: draw_mandelbrot
+;           
+; Inputs:   None
+; Returns:  None
+; Clobbers: None
 
 draw_mandelbrot:
 
@@ -239,8 +268,14 @@ draw_mandelbrot:
     ret
   
     
-
+; Function: init_palette
+;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor 
+; Inputs:   None
+; Returns:  None
+; Clobbers: None
 init_palette:
+    pusha
+
     ;; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
     ;; INT 10H 1010H: Set One DAC Color Register
     ;; Expects: AX    1010H
@@ -248,7 +283,6 @@ init_palette:
     ;;          CH    green value (00H-3fH)
     ;;          CL    blue value  (00H-3fH)
     ;;          DH    red value   (00H-3fH)
-
     xor     bx, bx
     xor     dx, dx
     mov     [tmp], dl
@@ -256,7 +290,7 @@ init_palette:
 .loop1:
     mov     dh, 0
     mov     ch, 0
-    mov     cl,  [tmp]
+    mov     cl, [tmp]
 
     mov     ax, 1010h
     int     10h
@@ -287,11 +321,12 @@ init_palette:
     cmp     bx, 256
     jl      .loop2
 
+    popa
     ret
 
-
-
-;;;;;;;;;;;;;   DATA
+;;;;;;;;;;;;;;;;;;;;;;;
+; DATA
+;;;;;;;;;;;;;;;;;;;;;;;
 
     x            dw 0
     y            dw 0
@@ -316,6 +351,7 @@ init_palette:
     world_height dq 2.0
 
     zoom         dq 2.0
+    unzoom       dq 0.5
 
     screen_ptr  dw 0x0000
 

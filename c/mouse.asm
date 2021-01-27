@@ -1,11 +1,10 @@
-;https://stackoverflow.com/questions/54280828/making-a-mouse-handler-in-x86-assembly 
+; https://stackoverflow.com/questions/54280828/making-a-mouse-handler-in-x86-assembly 
 
 HW_EQUIP_PS2     equ 4          ; PS2 mouse installed?
 MOUSE_PKT_BYTES  equ 3          ; Number of bytes in mouse packet
 MOUSE_RESOLUTION equ 3          ; Mouse resolution 8 counts/mm
 
 VIDEO_MODE       equ 0x13
-
 
 
 ; Function: set_pixel
@@ -363,7 +362,7 @@ draw_cursor:
     jz .afterDraw
     mov byte [es:di], cl
 
-.afterDraw
+.afterDraw:
 
     inc si
     inc di
@@ -388,7 +387,7 @@ curStatus:    db 0              ; Current mouse status
 noMouseMsg:   db "Error setting up & initializing mouse", 0x0d, 0x0a, 0
 
 cursorShape:
-    db 253,   0,   0,   0,   0,   
+    db 253,   0,   0,   0,   0,  
     cursorWidth equ $ - cursorShape
 	db 253, 253,   0,   0,   0,   
 	db 253, 254, 253,   0,   0,   
@@ -396,8 +395,7 @@ cursorShape:
 	db 253, 254, 254, 253, 253,   
 	db 253, 253, 253,   0,   0,   
 	db 253,   0, 253, 253,   0,   
-	db   0,   0, 253, 253,   0,   
-  
+	db   0,   0, 253, 253,   0,  
     cursorHight equ ($ - cursorShape) / cursorWidth
 
 areaUnderCursor:
