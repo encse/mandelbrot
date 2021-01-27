@@ -3,18 +3,22 @@
     int     10h
 
     call    init_palette
-
     call    mouse_start
 
 .loop:
     call    draw_mandelbrot
-    
-    push    161
-    push    100
+
+.waitClick
+    hlt
+    mov     al, [curStatus]
+    cmp     al, 16
+    jne     .waitClick
+    mov     byte [curStatus], 0
+    push    word [mouseX]
+    push    word [mouseY]
     call    handle_zoom
     jmp     .loop
-
-    call    terminate
+    
 
     x            dw 0
     y            dw 0

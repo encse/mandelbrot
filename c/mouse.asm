@@ -200,7 +200,6 @@ mouse_callback:
     mov dx, 199
 .j4:
 
-
     mov [mouseX], ax            ; Update current virtual mouseX coord
     mov [mouseY], dx            ; Update current virtual mouseY coord
 
