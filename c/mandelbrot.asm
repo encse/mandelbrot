@@ -5,51 +5,123 @@
 
     call    mouse_start
 
-    mov     ax, 250
+    push    160
+    push    100
     call    draw_mandelbrot
 
     call    terminate
 
-draw_mandelbrot:
-    jmp         start
+    x            dw 0
+    y            dw 0
+    i            dw 0
 
-    x           dw 0
-    y           dw 0
-    i           dw 0
+    c1           dq 0.0
+    c2           dq 0.0
+    z1           dq 0.0
+    z2           dq 0.0
+    tmp          dq 0.0
 
-    c1          dq 0.0
-    c2          dq 0.0
-    z1          dq 0.0
-    z2          dq 0.0
-    tmp         dq 0.0
+    const1       dq 1.0
+    const2       dq 2.0
+    const4       dq 4.0
+    zoom         dq 4.0
+    zoom_half    dq 2.0
+    width        dq 320.0
+    height       dq 200.0
 
-    const2      dq 2.0
-    const4      dq 4.0
+    world_x      dq -2.0
+    world_y      dq -1.0
+    world_width  dq 3.2
+    world_height dq 2.0
 
-    width       dq 320.0
-    height      dq 200.0
-
-    min_x       dq -2.0
-    max_x       dq 1.0
-    min_y       dq -1.0
-    max_y       dq 1.0
-              
     screen_ptr  dw 0x0000
 
-    loop_count  dw 0
+    loop_count  dw 250
 
-start:
+handle_zoom:
+    push    sp
+    mov     bp, sp
 
-    mov     [loop_count], ax
+
+    finit
+
+    ; world_x =  world_x +  (world_width * mouse_x / width) - (world_width / 10 / 2)
+
+    fld     qword [world_x]
+    fld     qword [width]
+    fild    word [bp + 6]
+    fld     qword [world_width] 
+    fmul    st1
+    fdiv    st2
+    fadd    st3
+    fld     qword [zoom]
+    fld     qword [world_width]
+    fdiv    st1
+    fsubr   st2
+    fstp    qword [world_x]
+    fstp    st0
+    fstp    st0
+    fstp    st0
+    fstp    st0
+    fstp    st0
+    
+    ; ; ; world_width = world_width / 10 
+    fld     qword [zoom_half]
+    fld     qword [world_width]
+    fdiv    st1
+    fstp    qword [world_width]
+    fstp    st0
+
+    ; ; world_y =  world_y +  (world_height * mouse_y / height) - (world_height / 10 / 2)
+    fld     qword [world_y]
+    fld     qword [height]
+    fild    word [bp + 4]
+    fld     qword [world_height]
+    fmul    st1
+    fdiv    st2
+    fadd    st3
+    fld     qword [zoom]
+    fld     qword [world_height]
+    fdiv    st1
+    fsubr   st2
+    fstp    qword [world_y]
+    fstp    st0
+    fstp    st0
+    fstp    st0
+    fstp    st0
+    fstp    st0
+    
+    ; world_height = world_height / 10 
+    fld     qword [zoom_half]
+    fld     qword [world_height]
+    fdiv    st1
+    fstp    qword [world_height]
+    fstp    st0
+
+    pop     sp
+    ret
+
+draw_mandelbrot:
+
+    push    sp
+    mov     bp, sp
+    
+
+    push    200     ; x
+    push    50     ; y
+
+    call    handle_zoom
+    finit
+
     mov     [screen_ptr], word 0
     mov     [x], word 0
     mov     [y], word 0
     xor     ax, ax
     mov     ds, ax       
+    
     push    VGA
     pop     es   
     
-    finit
 .yloop:         
     mov     cx, [y]
     cmp     cx, 200
@@ -70,30 +142,28 @@ start:
     fst     qword [z1]
     fstp    qword [z2]
 
-    ; $c1 = $min_x + ($max_x - $min_x) / $width * $x;
+    ; $c1 = $world_x + world_width / width * x;
+    fld     qword [world_x]
     fild    word [x]
     fld     qword [width]
-    fld     qword [min_x]
-    fld     qword [max_x]
-    fsub    st1
-    fdiv    st2
-    fmul    st3
-    fadd    st1
+    fld     qword [world_width]
+    fdiv    st1
+    fmul    st2
+    fadd    st3
     fstp    qword [c1]
     fstp    st0
     fstp    st0
     fstp    st0
 
     ; $c2 = $min_y + ($max_y - $min_y) / $height * $y;
+    fld     qword [world_y]
     fild    word [y]
     fld     qword [height]
-    fld     qword [min_y]
-    fld     qword [max_y]
-    fsub    st1
-    fdiv    st2
-    fmul    st3
-    fadd    st1
-    fstp     qword [c2]
+    fld     qword [world_height]
+    fdiv    st1
+    fmul    st2
+    fadd    st3
+    fstp    qword [c2]
     fstp    st0
     fstp    st0
     fstp    st0
@@ -183,6 +253,7 @@ start:
 
 .yloopend:
 
+    pop     sp
     ret
   
     
@@ -229,5 +300,3 @@ init_palette:
     jl      .loop2
 
     ret
-
-   
