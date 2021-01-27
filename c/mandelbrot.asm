@@ -179,7 +179,7 @@ draw_mandelbrot:
 
 .iloop:         
     mov     cx, [i]
-    cmp     cx, [loop_count]
+    cmp     cx, MAX_ITER
     je      .iloopend
 
     ; tmp = z1 * z1 - z2 * z2 + c1
@@ -216,6 +216,7 @@ draw_mandelbrot:
     fld     qword [z1]
     fmul    st0
     fadd
+    fst     qword [tmp2]
     fld     qword [const4]
     fcomi   st1
     fstp    st0
@@ -236,17 +237,41 @@ draw_mandelbrot:
     mov     di, [screen_ptr]
     mov     ax, [i]                
 
+    cmp     ax, MAX_ITER                      
+    jl      .j1
+    mov     ax, 253              ; the last 2 items of the palette are used by the mouse
+    jmp     .j2
+.j1:    
+   
+
+    ; push    dx
+    ; xor     dx, dx
+    ; mov     bx, 252
+    ; mul     bx
+    ; mov     bx, MAX_ITER
+    ; div     bx
+    ; pop dx
 
     ; http://linas.org/art-gallery/escape/escape.html
     ; n + 1 - log(log2(abs(z)))
+    ; fld     qword [log2_10_inv]
+    ; fld1
+    ; fld     qword [tmp2]   ; holds z^2
+    ; fsqrt
+    ; fyl2x   
+    ; fyl2x
+    ; fchs   
+    ; fld1    
+    ; fadd    st1
+    ; frndint
+    ; fistp   word [tmp2]
+    ; fstp    st0
+    ; fstp    st0
+    ; fstp    st0
+    ; add     ax, [tmp2]
 
 
-    shr     ax, (loop_log >> 8)           ; divide so that we are in the 0-255 range
-    cmp     ax, 254                       ; the last 2 items of the palette are used by the mouse
-    jl      .j1
-    mov     ax, 253
-.j1:    
-
+.j2:
     push    cx
     push    dx
     push    ax
@@ -322,10 +347,12 @@ init_palette:
     z1           dq 0.0
     z2           dq 0.0
     tmp          dq 0.0
+    tmp2         dq 0.0
 
     const1       dq 1.0
     const2       dq 2.0
     const4       dq 4.0
+    log2_10_inv  dq 0.30102999566
     
     width        dq 320.0
     height       dq 200.0
@@ -340,8 +367,7 @@ init_palette:
 
     screen_ptr  dw 0x0000
 
-    loop_log    equ 8
-    loop_count  dw ( 1<< loop_log)
+    MAX_ITER    equ 253
 
 palette:
     db 255, 0, 0

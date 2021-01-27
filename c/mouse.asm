@@ -381,22 +381,22 @@ draw_cursor:
     ret
 
 
-mouseX:       dw 0              ; Current mouse X coordinate
-mouseY:       dw 0              ; Current mouse Y coordinate
-curStatus:    db 0              ; Current mouse status
-noMouseMsg:   db "Error setting up & initializing mouse", 0x0d, 0x0a, 0
+mouseX:         dw 0              ; Current mouse X coordinate
+mouseY:         dw 0              ; Current mouse Y coordinate
+curStatus:      db 0              ; Current mouse status
+noMouseMsg:     db "Error setting up & initializing mouse", 0x0d, 0x0a, 0
 
-cursorShape:
-    db 254,   0,   0,   0,   0,  
-    cursorWidth equ $ - cursorShape
-	db 254, 254,   0,   0,   0,   
-	db 254, 255, 254,   0,   0,   
-	db 254, 255, 255, 254,   0,   
-	db 254, 255, 255, 254, 254,   
-	db 254, 254, 254,   0,   0,   
-	db 254,   0, 254, 254,   0,   
-	db   0,   0, 254, 254,   0,  
-    cursorHight equ ($ - cursorShape) / cursorWidth
+cursorShape:    db 254,   0,   0,   0,   0,  
+.r2:            db 254, 254,   0,   0,   0,   
+	            db 254, 255, 254,   0,   0,   
+	            db 254, 255, 255, 254,   0,   
+	            db 254, 255, 255, 254, 254,   
+	            db 254, 254, 254,   0,   0,   
+	            db 254,   0, 254, 254,   0,   
+	            db   0,   0, 254, 254,   0,  
+
+cursorWidth equ (.r2 - cursorShape)
+cursorHight equ ($ - cursorShape) / cursorWidth
 
 areaUnderCursor:
     times   cursorHight * cursorWidth db 0    
