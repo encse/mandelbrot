@@ -6,6 +6,94 @@ MOUSE_RESOLUTION equ 3          ; Mouse resolution 8 counts/mm
 
 VIDEO_MODE       equ 0x13
 
+
+
+; Function: set_pixel
+;           Set the color of (x,y) to the given color in a mouse aware way.
+;
+; Inputs:   SP+4   = color
+;           SP+6   = y
+;           SP+8   = x
+; Returns:  None
+; Clobbers: None
+
+set_pixel:
+    ;sti
+    push    bp
+    mov     bp, sp 
+    push    es
+    push    di
+    pusha
+
+    ; check if x and y are valid coordinates
+    mov     bx, word [bp + 8]
+    cmp     bx, 320
+    jge     .ret
+    cmp     bx, 0
+    jl     .ret
+
+    mov     ax, word [bp + 6]
+    cmp     ax, 200
+    jge     .ret
+    cmp     ax, 0
+    jl     .ret
+
+    mov     cx, 320
+    mul     cx
+    add     ax, bx
+
+    mov di, ax
+    mov cx, [bp + 4]
+
+
+    ; check if x and y is in the mouse rectangle, if yes, need to update the underlying area
+    mov     ax, word [bp + 6]
+    mov     dx, [mouseY]
+    sub     ax, dx
+    mov     bx, ax
+
+    mov     ax, word [bp + 8]
+    mov     dx, [mouseX]
+    sub     ax, dx
+    
+    cmp     bx, 0
+    jl      .draw
+    cmp     bx, cursorHight
+    jge     .draw
+
+    cmp     ax, 0
+    jl      .draw
+    cmp     ax, cursorWidth
+    jge     .draw
+
+    xchg    ax, bx
+    mov     dx, cursorWidth
+    mul     dx
+    add     ax, bx
+    mov     si, ax
+    
+    mov     byte [areaUnderCursor + si], cl
+
+    ; ; check if mouse is transparent at the given index, don't draw if not transparent
+    mov     al, [cursorShape + si]
+    cmp     al, 0
+    jnz     .after_draw
+
+.draw:
+    push VGA
+    pop es
+    mov byte [es:di], cl
+
+.after_draw:
+
+    ;cli
+.ret:
+    popa
+    pop     di
+    pop     es
+    pop     bp
+    retn    6
+
 mouse_start:
 
     ;; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
@@ -232,10 +320,9 @@ hide_cursor:
     mov ax, 0
     mov bx, 0
 .loop:
-    
     mov cl, byte [areaUnderCursor + si]
     mov byte [es:di], cl
-
+.afterDraw:
     inc si
     inc di
     inc bx
@@ -248,6 +335,7 @@ hide_cursor:
     cmp ax, cursorHight
     jl .loop
 
+.ret:
     pop es
     popa
     ret
@@ -267,10 +355,8 @@ draw_cursor:
     mov ax, 0
     mov bx, 0
 .loop:
-    
     mov cl, byte [es:di]
     mov byte [areaUnderCursor + si], cl
-
 
     mov cl, byte [cursorShape + si]
     cmp cl, 0
@@ -302,15 +388,15 @@ curStatus:    db 0              ; Current mouse status
 noMouseMsg:   db "Error setting up & initializing mouse", 0x0d, 0x0a, 0
 
 cursorShape:
-    db 253,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    db 253,   0,   0,   0,   0,   
     cursorWidth equ $ - cursorShape
-	db 253, 253,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-	db 253, 254, 253,   0,   0,   0,   0,   0,   0,   0,   0,
-	db 253, 254, 254, 253,   0,   0,   0,   0,   0,   0,   0,
-	db 253, 254, 254, 253, 253,   0,   0,   0,   0,   0,   0,
-	db 253, 253, 253,   0,   0,   0,   0,   0,   0,   0,   0,
-	db 253,   0, 253, 253,   0,   0,   0,   0,   0,   0,   0,
-	db   0,   0, 253, 253,   0,   0,   0,   0,   0,   0,   0
+	db 253, 253,   0,   0,   0,   
+	db 253, 254, 253,   0,   0,   
+	db 253, 254, 254, 253,   0,   
+	db 253, 254, 254, 253, 253,   
+	db 253, 253, 253,   0,   0,   
+	db 253,   0, 253, 253,   0,   
+	db   0,   0, 253, 253,   0,   
   
     cursorHight equ ($ - cursorShape) / cursorWidth
 

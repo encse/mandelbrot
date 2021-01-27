@@ -11,48 +11,16 @@
 .waitClick
     hlt
     mov     al, [curStatus]
-    cmp     al, 16
-    jne     .waitClick
-    mov     byte [curStatus], 0
+    cmp     al, 9               ; left click    0a -> right click
+    jne     .waitClick  
     push    word [mouseX]
     push    word [mouseY]
     call    handle_zoom
     jmp     .loop
     
-
-    x            dw 0
-    y            dw 0
-    i            dw 0
-
-    c1           dq 0.0
-    c2           dq 0.0
-    z1           dq 0.0
-    z2           dq 0.0
-    tmp          dq 0.0
-
-    const1       dq 1.0
-    const2       dq 2.0
-    const4       dq 4.0
-    
-
-    width        dq 320.0
-    height       dq 200.0
-
-    world_x      dq -2.0
-    world_y      dq -1.0
-    world_width  dq 3.2
-    world_height dq 2.0
-
-    zoom         dq 1.0
-
-    screen_ptr  dw 0x0000
-
-    loop_count  dw 250
-
 handle_zoom:
-    push    sp
+    push    sp          
     mov     bp, sp
-
 
     finit
 
@@ -239,11 +207,16 @@ draw_mandelbrot:
     mov     di, [screen_ptr]
     mov     ax, [i]                
 
-    cmp     ax, [loop_count]         ; if loop_count is reached, set the color to 0 (black)
+    shr     ax, (loop_log >> 8)           ; divide so that we are in the 0-255 range
+    cmp     ax, 254                       ; the last 2 items of the palette are used by the mouse
     jl      .j1
     xor     ax, ax
 .j1:    
-    mov     byte [es:di], al
+
+    push    cx
+    push    dx
+    push    ax
+    call    set_pixel
     inc     di
     mov     [screen_ptr], di
     
@@ -278,34 +251,73 @@ init_palette:
 
     xor     bx, bx
     xor     dx, dx
+    mov     [tmp], dl
 
 .loop1:
-    mov     ax, bx
-    add     ax, bx
     mov     dh, 0
-    mov     ch, al
-    mov     cl, al
+    mov     ch, 0
+    mov     cl,  [tmp]
 
     mov     ax, 1010h
     int     10h
+   
+    mov     al, [tmp]
+    inc     al
+    mov     [tmp], al
+
     inc     bx
     cmp     bx, 128
     jl      .loop1
 
+    xor     ax, ax
 .loop2:
-    mov     ax, 512
-    sub     ax, bx
-    sub     ax, bx
-
-    mov     dh, al
-    mov     ch, al
-    mov     cl, al
-    sub     cl, 128
+    mov     dh, [tmp]
+    mov     ch, [tmp]
+    mov     cl, [tmp]
+    add     cl, 128
 
     mov     ax, 1010h
     int     10h
+
+    mov     al, [tmp]
+    inc     al
+    mov     [tmp], al
+
     inc     bx
     cmp     bx, 256
     jl      .loop2
 
     ret
+
+
+
+;;;;;;;;;;;;;   DATA
+
+    x            dw 0
+    y            dw 0
+    i            dw 0
+
+    c1           dq 0.0
+    c2           dq 0.0
+    z1           dq 0.0
+    z2           dq 0.0
+    tmp          dq 0.0
+
+    const1       dq 1.0
+    const2       dq 2.0
+    const4       dq 4.0
+    
+    width        dq 320.0
+    height       dq 200.0
+
+    world_x      dq -2.0
+    world_y      dq -1.0
+    world_width  dq 3.2
+    world_height dq 2.0
+
+    zoom         dq 2.0
+
+    screen_ptr  dw 0x0000
+
+    loop_log    equ 8
+    loop_count  dw ( 1<< loop_log)
