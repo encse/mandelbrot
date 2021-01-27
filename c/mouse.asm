@@ -103,7 +103,7 @@ mouse_start:
     ;;          CL    blue value  (00H-3fH)
     ;;          DH    red value   (00H-3fH)
 
-    mov     bx, 254
+    mov     bx, 255
     mov     dh, 255
     mov     ch, 255
     mov     cl, 255
@@ -111,7 +111,7 @@ mouse_start:
     mov     ax, 1010h
     int     10h
 
-    mov     bx, 253
+    mov     bx, 254
     mov     dh, 255
     mov     ch, 255
     mov     cl, 255
@@ -387,15 +387,15 @@ curStatus:    db 0              ; Current mouse status
 noMouseMsg:   db "Error setting up & initializing mouse", 0x0d, 0x0a, 0
 
 cursorShape:
-    db 253,   0,   0,   0,   0,  
+    db 254,   0,   0,   0,   0,  
     cursorWidth equ $ - cursorShape
-	db 253, 253,   0,   0,   0,   
-	db 253, 254, 253,   0,   0,   
-	db 253, 254, 254, 253,   0,   
-	db 253, 254, 254, 253, 253,   
-	db 253, 253, 253,   0,   0,   
-	db 253,   0, 253, 253,   0,   
-	db   0,   0, 253, 253,   0,  
+	db 254, 254,   0,   0,   0,   
+	db 254, 255, 254,   0,   0,   
+	db 254, 255, 255, 254,   0,   
+	db 254, 255, 255, 254, 254,   
+	db 254, 254, 254,   0,   0,   
+	db 254,   0, 254, 254,   0,   
+	db   0,   0, 254, 254,   0,  
     cursorHight equ ($ - cursorShape) / cursorWidth
 
 areaUnderCursor:
