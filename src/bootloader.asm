@@ -1,7 +1,5 @@
-bits 16            
-org 0x7c00
-
-global bpb_disk_info
+    bits 16
+    org 0x7c00
 
     jmp boot_start
     times 3-($-$$)     db 0x90   ; Support 2 or 3 byte encoded JMPs before BPB.
@@ -31,9 +29,9 @@ bpb_disk_info:
 
     DISK_READ_ERROR    db `DISK_READ_ERROR\r\n`, 0
 
-boot_start:  
+boot_start:
     xor     ax, ax
-    mov     ds, ax          
+    mov     ds, ax
     mov     es, ax
     mov     ss, ax              ; Set stack pointer just below bootloader
     mov     sp, 0x7c00
@@ -51,9 +49,9 @@ boot_start:
     mov     dh, 0x00            ; head number
                                 ; dl contains the drive number (set by bios)
     mov     ah, 0x02            ; 2 for reading
-    mov     al, sector_count    
+    mov     al, sector_count
     mov     ch, 0x00            ; cylinder
-    mov     cl, start_sector    
+    mov     cl, start_sector
     int     0x13
 
     jc      .disk_read_error
@@ -66,7 +64,7 @@ boot_start:
 .disk_read_error:
     mov     bx, DISK_READ_ERROR
     call    print_string
-    call    terminate 
+    call    terminate
 
 print_string:
     pusha
@@ -89,11 +87,11 @@ print_string:
 
 terminate:
     hlt
-    jmp     terminate  
+    jmp     terminate
 
 
 ; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     times   510 - ($ - $$) db 0   ;Fill the rest of sector with 0
-    dw      0xAA55                ;Add boot signature at the end of bootloader 
+    dw      0xAA55                ;Add boot signature at the end of bootloader
 

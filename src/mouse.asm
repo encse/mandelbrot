@@ -1,11 +1,11 @@
-; https://stackoverflow.com/questions/54280828/making-a-mouse-handler-in-x86-assembly 
+; https://stackoverflow.com/questions/54280828/making-a-mouse-handler-in-x86-assembly
 
-HW_EQUIP_PS2     equ 4          ; PS2 mouse installed?
-MOUSE_PKT_BYTES  equ 3          ; Number of bytes in mouse packet
-MOUSE_RESOLUTION equ 3          ; Mouse resolution 8 counts/mm
+    HW_EQUIP_PS2     equ 4          ; PS2 mouse installed?
+    MOUSE_PKT_BYTES  equ 3          ; Number of bytes in mouse packet
+    MOUSE_RESOLUTION equ 3          ; Mouse resolution 8 counts/mm
 
-VIDEO_MODE       equ 0x13
-VGA              equ 0xa000
+    VIDEO_MODE       equ 0x13
+    VGA              equ 0xa000
 
 ; Function: set_pixel
 ;           Set the color of (x,y) to the given color in a mouse aware way.
@@ -19,7 +19,7 @@ VGA              equ 0xa000
 set_pixel:
     ;sti
     push    bp
-    mov     bp, sp 
+    mov     bp, sp
     push    es
     push    di
     pusha
@@ -54,7 +54,7 @@ set_pixel:
     mov     ax, word [bp + 8]
     mov     dx, [mouseX]
     sub     ax, dx
-    
+
     cmp     bx, 0
     jl      .draw
     cmp     bx, cursorHight
@@ -70,7 +70,7 @@ set_pixel:
     mul     dx
     add     ax, bx
     mov     si, ax
-    
+
     mov     byte [areaUnderCursor + si], cl
 
     ; ; check if mouse is transparent at the given index, don't draw if not transparent
@@ -79,9 +79,9 @@ set_pixel:
     jnz     .after_draw
 
 .draw:
-    push VGA
-    pop es
-    mov byte [es:di], cl
+    push    VGA
+    pop     es
+    mov     byte [es:di], cl
 
 .after_draw:
 
@@ -120,8 +120,8 @@ mouse_start:
     int     10h
 
 
-    call mouse_initialize
-    call mouse_enable           ; Enable the mouse
+    call    mouse_initialize
+    call    mouse_enable           ; Enable the mouse
     ret
 
 ; Function: mouse_initialize
@@ -132,38 +132,38 @@ mouse_start:
 ; Clobbers: AX
 
 mouse_initialize:
-    push es
-    push bx
+    push    es
+    push    bx
 
-    int 0x11                    ; Get equipment list
-    test ax, HW_EQUIP_PS2       ; Is a PS2 mouse installed?
-    jz .no_mouse                ;     if not print error and end
+    int     0x11                    ; Get equipment list
+    test    ax, HW_EQUIP_PS2       ; Is a PS2 mouse installed?
+    jz      .no_mouse                ;     if not print error and end
 
-    mov ax, 0xC205              ; Initialize mouse
-    mov bh, MOUSE_PKT_BYTES     ; 3 byte packets
-    int 0x15                    ; Call BIOS to initialize
-    jc .no_mouse                ;    If not successful assume no mouse
+    mov     ax, 0xC205              ; Initialize mouse
+    mov     bh, MOUSE_PKT_BYTES     ; 3 byte packets
+    int     0x15                    ; Call BIOS to initialize
+    jc      .no_mouse                ;    If not successful assume no mouse
 
-    mov ax, 0xC203              ; Set resolution
-    mov bh, MOUSE_RESOLUTION    ; 8 counts / mm
-    int 0x15                    ; Call BIOS to set resolution
-    jc .no_mouse                ;    If not successful assume no mouse
+    mov     ax, 0xC203              ; Set resolution
+    mov     bh, MOUSE_RESOLUTION    ; 8 counts / mm
+    int     0x15                    ; Call BIOS to set resolution
+    jc      .no_mouse                ;    If not successful assume no mouse
 
-    push cs
-    pop es                      ; ES = segment where code and mouse handler reside
+    push    cs
+    pop     es                      ; ES = segment where code and mouse handler reside
 
-    mov bx, mouse_callback_dummy
-    mov ax, 0xC207              ; Install a default null handler (ES:BX)
-    int 0x15                    ; Call BIOS to set callback
-    jc .no_mouse                ;    If not successful assume no mouse
+    mov     bx, mouse_callback_dummy
+    mov     ax, 0xC207              ; Install a default null handler (ES:BX)
+    int     0x15                    ; Call BIOS to set callback
+    jc      .no_mouse                ;    If not successful assume no mouse
 
     clc                         ; CF=0 is success
-    jmp .finished
+    jmp     .finished
 .no_mouse:
     stc                         ; CF=1 is error
 .finished:
-    pop bx
-    pop es
+    pop     bx
+    pop     es
     ret
 
 ; Function: mouse_enable
@@ -174,23 +174,23 @@ mouse_initialize:
 ; Clobbers: AX
 
 mouse_enable:
-    push es
-    push bx
+    push    es
+    push    bx
 
-    call mouse_disable          ; Disable mouse before enabling
+    call    mouse_disable          ; Disable mouse before enabling
 
-    push cs
-    pop es
-    mov bx, mouse_callback
-    mov ax, 0xC207              ; Set mouse callback function (ES:BX)
-    int 0x15                    ; Call BIOS to set callback
+    push    cs
+    pop     es
+    mov     bx, mouse_callback
+    mov     ax, 0xC207              ; Set mouse callback function (ES:BX)
+    int     0x15                    ; Call BIOS to set callback
 
-    mov ax, 0xC200              ; Enable/Disable mouse
-    mov bh, 1                   ; BH = Enable = 1
-    int 0x15                    ; Call BIOS to disable mouse
+    mov     ax, 0xC200              ; Enable/Disable mouse
+    mov     bh, 1                   ; BH = Enable = 1
+    int     0x15                    ; Call BIOS to disable mouse
 
-    pop bx
-    pop es
+    pop     bx
+    pop     es
     ret
 
 ; Function: mouse_disable
@@ -201,19 +201,19 @@ mouse_enable:
 ; Clobbers: AX
 
 mouse_disable:
-    push es
-    push bx
+    push    es
+    push    bx
 
-    mov ax, 0xC200              ; Enable/Disable mouse
-    xor bx, bx                  ; BH = Disable = 0
-    int 0x15                    ; Call BIOS to disable mouse
+    mov     ax, 0xC200              ; Enable/Disable mouse
+    xor     bx, bx                  ; BH = Disable = 0
+    int     0x15                    ; Call BIOS to disable mouse
 
-    mov es, bx
-    mov ax, 0xC207              ; Clear callback function (ES:BX=0:0)
-    int 0x15                    ; Call BIOS to set callback
+    mov     es, bx
+    mov     ax, 0xC207              ; Clear callback function (ES:BX=0:0)
+    int     0x15                    ; Call BIOS to set callback
 
-    pop bx
-    pop es
+    pop     bx
+    pop     es
     ret
 
 ; Function: mouse_callback (FAR)
@@ -232,151 +232,151 @@ mouse_disable:
 ARG_OFFSETS      equ 6          ; Offset of args from BP
 
 mouse_callback:
-    push bp                     ; Function prologue
-    mov bp, sp
-    push ds                     ; Save registers we modify
-    push ax
-    push bx
-    push cx
-    push dx
-    push es
-    push di
+    push    bp                     ; Function prologue
+    mov     bp, sp
+    push    ds                     ; Save registers we modify
+    push    ax
+    push    bx
+    push    cx
+    push    dx
+    push    es
+    push    di
 
-    push cs
-    pop ds                      ; DS = CS, CS = where our variables are stored
+    push    cs
+    pop     ds                      ; DS = CS, CS = where our variables are stored
 
-    call hide_cursor 
+    call    hide_cursor
 
-    mov al,[bp+ARG_OFFSETS+6]
-    mov bl, al                  ; BX = copy of status byte
-    mov cl, 3                   ; Shift signY (bit 5) left 3 bits
-    shl al, cl                  ; CF = signY
+    mov     al, [bp+ARG_OFFSETS+6]
+    mov     bl, al                  ; BX = copy of status byte
+    mov     cl, 3                   ; Shift signY (bit 5) left 3 bits
+    shl     al, cl                  ; CF = signY
                                 ; Sign bit of AL = SignX
-    sbb dh, dh                  ; CH = SignY value set in all bits
+    sbb     dh, dh                  ; CH = SignY value set in all bits
     cbw                         ; AH = SignX value set in all bits
-    mov dl, [bp+ARG_OFFSETS+2]  ; CX = movementY
-    mov al, [bp+ARG_OFFSETS+4]  ; AX = movementX
+    mov     dl, [bp+ARG_OFFSETS+2]  ; CX = movementY
+    mov     al, [bp+ARG_OFFSETS+4]  ; AX = movementX
 
 
     ; new mouse X_coord = X_Coord + movementX
     ; new mouse Y_coord = Y_Coord + (-movementY)
-    neg dx
-    mov cx, [mouseY]
-    add dx, cx                  ; DX = new mouse Y_coord
-    mov cx, [mouseX]
-    add ax, cx                  ; AX = new mouse X_coord
+    neg     dx
+    mov     cx, [mouseY]
+    add     dx, cx                  ; DX = new mouse Y_coord
+    mov     cx, [mouseX]
+    add     ax, cx                  ; AX = new mouse X_coord
 
 
     ; Status
-    mov [curStatus], bl         ; Update the current status with the new bits
-    cmp ax, 0
-    jge .j1
-    mov ax, 0
+    mov     [curStatus], bl         ; Update the current status with the new bits
+    cmp     ax, 0
+    jge     .j1
+    mov     ax, 0
 .j1:
-    cmp ax, 319
-    jle .j2
-    mov ax, 319
+    cmp     ax, 319
+    jle     .j2
+    mov     ax, 319
 .j2:
 
-    cmp dx, 0
-    jge .j3
-    mov dx, 0
+    cmp     dx, 0
+    jge     .j3
+    mov     dx, 0
 .j3:
-    cmp dx, 199
-    jle .j4
-    mov dx, 199
+    cmp     dx, 199
+    jle     .j4
+    mov     dx, 199
 .j4:
 
-    mov [mouseX], ax            ; Update current virtual mouseX coord
-    mov [mouseY], dx            ; Update current virtual mouseY coord
+    mov     [mouseX], ax            ; Update current virtual mouseX coord
+    mov     [mouseY], dx            ; Update current virtual mouseY coord
 
-    call draw_cursor
+    call    draw_cursor
 
-    pop di
-    pop es
-    pop dx                      ; Restore all modified registers
-    pop cx
-    pop bx
-    pop ax
-    pop ds
-    pop bp                      ; Function epilogue
+    pop     di
+    pop     es
+    pop     dx                      ; Restore all modified registers
+    pop     cx
+    pop     bx
+    pop     ax
+    pop     ds
+    pop     bp                      ; Function epilogue
 
 mouse_callback_dummy:
     retf                        ; This routine was reached via FAR CALL. Need a FAR RET
 
 hide_cursor:
     pusha
-    push es
-    push VGA
-    pop es
-    mov ax, [mouseY]
-    mov cx, 320
-    mul cx
-    add ax, [mouseX]
-    mov di, ax
-    mov si, 0
-    
-    mov ax, 0
-    mov bx, 0
-.loop:
-    mov cl, byte [areaUnderCursor + si]
-    mov byte [es:di], cl
-.afterDraw:
-    inc si
-    inc di
-    inc bx
-    cmp bx, cursorWidth
-    jl .loop
-    xor bx, bx
+    push    es
+    push    VGA
+    pop     es
+    mov     ax, [mouseY]
+    mov     cx, 320
+    mul     cx
+    add     ax, [mouseX]
+    mov     di, ax
+    mov     si, 0
 
-    add di, 320 - cursorWidth
-    inc ax
-    cmp ax, cursorHight
-    jl .loop
+    mov     ax, 0
+    mov     bx, 0
+.loop:
+    mov     cl, byte [areaUnderCursor + si]
+    mov     byte [es:di], cl
+.afterDraw:
+    inc     si
+    inc     di
+    inc     bx
+    cmp     bx, cursorWidth
+    jl      .loop
+    xor     bx, bx
+
+    add     di, 320 - cursorWidth
+    inc     ax
+    cmp     ax, cursorHight
+    jl      .loop
 
 .ret:
-    pop es
+    pop     es
     popa
     ret
 
 draw_cursor:
     pusha
-    push es
-    push VGA
-    pop es
-    mov ax, [mouseY]
-    mov cx, 320
-    mul cx
-    add ax, [mouseX]
-    mov di, ax
-    mov si, 0
-    
-    mov ax, 0
-    mov bx, 0
-.loop:
-    mov cl, byte [es:di]
-    mov byte [areaUnderCursor + si], cl
+    push    es
+    push    VGA
+    pop     es
+    mov     ax, [mouseY]
+    mov     cx, 320
+    mul     cx
+    add     ax, [mouseX]
+    mov     di, ax
+    mov     si, 0
 
-    mov cl, byte [cursorShape + si]
-    cmp cl, 0
-    jz .afterDraw
-    mov byte [es:di], cl
+    mov     ax, 0
+    mov     bx, 0
+.loop:
+    mov     cl, byte [es:di]
+    mov     byte [areaUnderCursor + si], cl
+
+    mov     cl, byte [cursorShape + si]
+    cmp     cl, 0
+    jz      .afterDraw
+    mov     byte [es:di], cl
 
 .afterDraw:
 
-    inc si
-    inc di
-    inc bx
-    cmp bx, cursorWidth
-    jl .loop
-    xor bx, bx
+    inc     si
+    inc     di
+    inc     bx
+    cmp     bx, cursorWidth
+    jl      .loop
+    xor     bx, bx
 
-    add di, 320 - cursorWidth
-    inc ax
-    cmp ax, cursorHight
-    jl .loop
+    add     di, 320 - cursorWidth
+    inc     ax
+    cmp     ax, cursorHight
+    jl      .loop
 
-    pop es
+    pop     es
     popa
     ret
 
@@ -386,18 +386,18 @@ mouseY:         dw 0              ; Current mouse Y coordinate
 curStatus:      db 0              ; Current mouse status
 noMouseMsg:     db "Error setting up & initializing mouse", 0x0d, 0x0a, 0
 
-cursorShape:    db 254,   0,   0,   0,   0,  
-.r2:            db 254, 254,   0,   0,   0,   
-                db 254, 255, 254,   0,   0,   
-                db 254, 255, 255, 254,   0,   
-                db 254, 255, 255, 254, 254,   
-                db 254, 254, 254,   0,   0,   
-                db 254,   0, 254, 254,   0,   
-                db   0,   0, 254, 254,   0,  
+cursorShape:    db 254,   0,   0,   0,   0,
+.r2:            db 254, 254,   0,   0,   0,
+                db 254, 255, 254,   0,   0,
+                db 254, 255, 255, 254,   0,
+                db 254, 255, 255, 254, 254,
+                db 254, 254, 254,   0,   0,
+                db 254,   0, 254, 254,   0,
+                db   0,   0, 254, 254,   0,
 
 cursorWidth equ (.r2 - cursorShape)
 cursorHight equ ($ - cursorShape) / cursorWidth
 
 areaUnderCursor:
-    times   cursorHight * cursorWidth db 0    
+    times   cursorHight * cursorWidth db 0
 

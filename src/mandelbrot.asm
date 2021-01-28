@@ -12,27 +12,27 @@
     hlt
 
     mov     al, [curStatus]
-    cmp     al, 0x9              
-    jne    .l1  
-    push    dword [zoom + 4]        ; left click  
-    push    dword [zoom]   
+    cmp     al, 0x9
+    jne    .l1
+    push    dword [zoom + 4]        ; left click
+    push    dword [zoom]
     push    word  [mouseY]
-    push    word  [mouseX]       
+    push    word  [mouseX]
     call    handle_zoom
     jmp     .loop
 .l1:
     cmp     al, 0xa
     jne    .waitClick               ; right click
-    push    dword [unzoom + 4]            
-    push    dword [unzoom]   
+    push    dword [unzoom + 4]
+    push    dword [unzoom]
     push    word  [mouseY]
     push    word  [mouseX]
     call    handle_zoom
     jmp     .loop
-    
+
 
 ; Function: handle_zoom
-;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor 
+;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor
 ; Inputs:   SP+4   = x
 ;           SP+6   = y
 ;           SP+8   = zoom
@@ -40,7 +40,7 @@
 ; Clobbers: None
 
 handle_zoom:
-    push    sp          
+    push    sp
     mov     bp, sp
 
     finit
@@ -49,7 +49,7 @@ handle_zoom:
     fld     qword [world_x]
     fld     qword [width]
     fild    word [bp + 4]
-    fld     qword [world_width] 
+    fld     qword [world_width]
     fmul    st1
     fdiv    st2
     fadd    st3
@@ -65,8 +65,8 @@ handle_zoom:
     fstp    st0
     fstp    st0
     fstp    st0
-    
-    ; ; ; world_width = world_width / zoom 
+
+    ; ; ; world_width = world_width / zoom
     fld     qword [bp + 8]
     fld     qword [world_width]
     fdiv    st1
@@ -93,8 +93,8 @@ handle_zoom:
     fstp    st0
     fstp    st0
     fstp    st0
-    
-    ; world_height = world_height / 10 
+
+    ; world_height = world_height / 10
     fld     qword [bp + 8]
     fld     qword [world_height]
     fdiv    st1
@@ -105,9 +105,9 @@ handle_zoom:
     retn    8
 
 
-    
+
 ; Function: draw_mandelbrot
-;           
+;
 ; Inputs:   None
 ; Returns:  None
 ; Clobbers: None
@@ -116,16 +116,16 @@ draw_mandelbrot:
 
     push    sp
     mov     bp, sp
-    
+
     finit
 
     mov     [screen_ptr], word 0
     mov     [x], word 0
     mov     [y], word 0
     xor     ax, ax
-    mov     ds, ax       
-    
-.yloop:         
+    mov     ds, ax
+
+.yloop:
     mov     cx, [y]
     cmp     cx, 200
     je      .yloopend
@@ -136,7 +136,7 @@ draw_mandelbrot:
     fldz
     fstp    qword [c1]
 
-.xloop:         
+.xloop:
     mov     cx, [x]
     cmp     cx, 320
     je .xloopend
@@ -174,7 +174,7 @@ draw_mandelbrot:
     xor     ax, ax
     mov     [i], ax
 
-.iloop:         
+.iloop:
     mov     cx, [i]
     cmp     cx, MAX_ITER
     je      .iloopend
@@ -185,8 +185,8 @@ draw_mandelbrot:
     fmul    st0
     fld     qword [z1]
     fmul    st0
-    fsub    st1           
-    fadd    st2        
+    fsub    st1
+    fadd    st2
     fstp    qword [tmp]
     fstp    st0
     fstp    st0
@@ -222,24 +222,24 @@ draw_mandelbrot:
 
     jbe     .iloopend
 
- .nexti:        
+ .nexti:
     inc     cx
     mov     [i], cx
     jmp     .iloop
 
-.iloopend:      
+.iloopend:
     mov     cx, [x]
     mov     dx, [y]
 
     mov     di, [screen_ptr]
-    mov     ax, [i]                
+    mov     ax, [i]
 
-    cmp     ax, MAX_ITER                      
+    cmp     ax, MAX_ITER
     jl      .j1
     mov     ax, 253              ; the last 2 items of the palette are used by the mouse
     jmp     .j2
-.j1:    
-   
+.j1:
+
 
     ; push    dx
     ; xor     dx, dx
@@ -255,10 +255,10 @@ draw_mandelbrot:
     ; fld1
     ; fld     qword [tmp2]   ; holds z^2
     ; fsqrt
-    ; fyl2x   
     ; fyl2x
-    ; fchs   
-    ; fld1    
+    ; fyl2x
+    ; fchs
+    ; fld1
     ; fadd    st1
     ; frndint
     ; fistp   word [tmp2]
@@ -275,14 +275,14 @@ draw_mandelbrot:
     call    set_pixel
     inc     di
     mov     [screen_ptr], di
-    
+
 .nextx:
     inc     cx
     mov     [x], cx
     jmp     .xloop
 
-.xloopend:      
-.nexty:         
+.xloopend:
+.nexty:
     mov     ax, [y]
     inc     ax
     mov     [y], ax
@@ -293,10 +293,10 @@ draw_mandelbrot:
 
     pop     sp
     ret
-  
-    
+
+
 ; Function: init_palette
-;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor 
+;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor
 ; Inputs:   None
 ; Returns:  None
 ; Clobbers: None
@@ -350,7 +350,7 @@ init_palette:
     const2       dq 2.0
     const4       dq 4.0
     log2_10_inv  dq 0.30102999566
-    
+
     width        dq 320.0
     height       dq 200.0
 
