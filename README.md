@@ -4,7 +4,7 @@ A 16 bit bootloader written in assembly, featuring 320x200 graphics with 256 col
 
 ![screenshot](screenshot.png)
 
-For developement I used Qemu and Nasm on my mac:
+I used Qemu and Nasm on my mac for development:
 
 ```
     brew install qemu
