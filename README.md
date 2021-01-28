@@ -1,6 +1,6 @@
 # Mandelbrot set as a bootloader
 
-A 16 bit bootloader written in assembly featuring 320x200 graphics with 256 colors and mouse handling. 
+A 16 bit bootloader written in assembly, featuring 320x200 graphics with 256 colors and mouse handling. 
 
 ![screenshot](screenshot.png)
 
