@@ -1,4 +1,4 @@
-HSBToRGB = function (h,s,v) {
+function HSVToRGB(h, s, v) {
 
     var r, g, b, i, f, p, q, t;
     if (arguments.length === 1) {
@@ -24,8 +24,21 @@ HSBToRGB = function (h,s,v) {
     ];
 }
 
-
-for(let i =0;i<256;i++){
-    console.log(HSBToRGB(i/256,1,1))
+function toHex(n) {
+    return "0x" + n.toString(16).padStart(2, "0")
 }
-    
+
+for (let j = 0; j < 64; j++) {
+    let st = '';
+    for (let i = 0; i < 4; i++) {
+        let c = j * 4 + i;
+
+        const [r, g, b] = (c >= 253 ? [0, 0, 0] : HSVToRGB(c / 256, 1, 1)).map(toHex);
+
+        if (i > 0) {
+            st += ",    ";
+        }
+        st += `${r}, ${g}, ${b}`;
+    }
+    console.log(`\tdb\t${st}`);
+}
