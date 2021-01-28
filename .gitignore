@@ -1,4 +1,2 @@
-*.bin
-c/BORLANDC
-c/NC
 dosbox.app
+*.bin
