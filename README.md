@@ -1,16 +1,18 @@
-# Bootloader
+# Mandelbrot set as a bootloader
 
-This is a trivial bootloader written in assembly.
+A 16 bit bootloader written in assembly featuring 320x200 graphics with 256 colors and mouse handling. 
 
 ![screenshot](screenshot.png)
 
-Setup requirements (mac)
+Setup requirements on (mac)
 ```
-brew install qemu
-brew install nasm
+    brew install qemu
+    brew install nasm
 ```
 
-Build and run:
+To build and run:
 ```
-nasm bootloader.asm -o bootloader.bin && qemu-system-i386 -drive format=raw,file=bootloader.bin
+    make run
 ```
+
+The makefile creates a bootable `.img` floppy image as well that can be used in VirtualBox or possibly on a physical machine.
