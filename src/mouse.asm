@@ -5,7 +5,7 @@ MOUSE_PKT_BYTES  equ 3          ; Number of bytes in mouse packet
 MOUSE_RESOLUTION equ 3          ; Mouse resolution 8 counts/mm
 
 VIDEO_MODE       equ 0x13
-
+VGA              equ 0xa000
 
 ; Function: set_pixel
 ;           Set the color of (x,y) to the given color in a mouse aware way.
@@ -388,12 +388,12 @@ noMouseMsg:     db "Error setting up & initializing mouse", 0x0d, 0x0a, 0
 
 cursorShape:    db 254,   0,   0,   0,   0,  
 .r2:            db 254, 254,   0,   0,   0,   
-	            db 254, 255, 254,   0,   0,   
-	            db 254, 255, 255, 254,   0,   
-	            db 254, 255, 255, 254, 254,   
-	            db 254, 254, 254,   0,   0,   
-	            db 254,   0, 254, 254,   0,   
-	            db   0,   0, 254, 254,   0,  
+                db 254, 255, 254,   0,   0,   
+                db 254, 255, 255, 254,   0,   
+                db 254, 255, 255, 254, 254,   
+                db 254, 254, 254,   0,   0,   
+                db 254,   0, 254, 254,   0,   
+                db   0,   0, 254, 254,   0,  
 
 cursorWidth equ (.r2 - cursorShape)
 cursorHight equ ($ - cursorShape) / cursorWidth

@@ -48,24 +48,24 @@ boot_start:
     start_sector    EQU 2
 
     mov     bx, main_start      ; es:bx contains the buffer address
-	mov     dh, 0x00            ; head number
+    mov     dh, 0x00            ; head number
                                 ; dl contains the drive number (set by bios)
-	mov     ah, 0x02            ; 2 for reading
-	mov     al, sector_count    
-	mov     ch, 0x00            ; cylinder
-	mov     cl, start_sector    
-	int     0x13
+    mov     ah, 0x02            ; 2 for reading
+    mov     al, sector_count    
+    mov     ch, 0x00            ; cylinder
+    mov     cl, start_sector    
+    int     0x13
 
     jc      .disk_read_error
 
-	cmp     al, sector_count
-	jne     .disk_read_error
+    cmp     al, sector_count
+    jne     .disk_read_error
 
     jmp     main_start
 
 .disk_read_error:
-	mov     bx, DISK_READ_ERROR
-	call    print_string
+    mov     bx, DISK_READ_ERROR
+    call    print_string
     call    terminate 
 
 print_string:
