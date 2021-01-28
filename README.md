@@ -16,5 +16,5 @@ To build and run:
     make run
 ```
 
-The makefile creates a bootable floppy image [.img](bin/boot.img) as well. This can be used in VirtualBox 
+The makefile creates a bootable [floppy image](bin/boot.img) as well. This can be used in VirtualBox 
 or possibly on a physical machine.
