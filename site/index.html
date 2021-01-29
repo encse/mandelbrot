@@ -38,7 +38,6 @@
             const canvas = document.getElementById("screen_canvas");
             canvas.oncontextmenu = () => false;
 
-
             canvas.addEventListener("mouseenter",
                 () => {
                     emulator.keyboard_send_keys(true);
@@ -67,11 +66,11 @@
             <p class="heading">Készítettem egy kisebb bootloadert assemblyben. Először csak egy annyit tudott kiírni
                 a képernyőre, hogy Hello Zsófi, de ezt valahogy kevésnek éreztem, úgyhogy kis töprengés
                 után elhatároztam, hogy egy Mandelbrot halmaz rajzolót fogok készíteni. Ilyenekkel
-                sokat szórakoztam gyerek koromban, úgyhogy miért ne.
+                sokat szórakoztam gyerekkoromban, úgyhogy miért ne.
             </p>
 
             <div class="canvas" id="screen_container">
-                <div><img src="screenshot.png" width="600" id="screen_canvas" /></div>
+                <div><img src="screenshot.png" width="600" /></div>
                 <canvas id="screen_canvas"></canvas>
             </div>
 
