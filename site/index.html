@@ -77,14 +77,16 @@
 
             <div class="columns">
                 <p>Ez a kis demó egy x86 emulátorban fut webassemblyben. Egy tisztességes emulátorban
-                    kb. 1000 gyorsabban működik, aki szeretné ki is próbálhatja ezzel a <a href="boot.img">floppy
-                        image</a>-el.
+                    kb. 1000x gyorsabban működik, aki szeretné ki is próbálhatja ezzel a <a href="boot.img">floppy
+                    image</a>-el.
+                </p>
+                <p>
                     Igazi gépen nem próbáltam, jóhogy... honnan lenne hozzá floppy meghajtóm meg kislemezem...
                 </p>
 
                 <h2>Első lépések</h2>
 
-                <p>A bootloaderekről azt érdemes tudni, hogy amikor egy PC elindul (ez még UEFI boot előtt volt)
+                <p>A bootloaderekről azt érdemes tudni, hogy amikor egy PC elindul (ez még az UEFI előtt volt),
                     elkezd körülnézni a különböző meghajtók elején. Ha az első szektor végén megtalálja
                     a boot szignatúrát (0xAA55), akkor nagyon megörül neki, betölti a szektort a memória
                     egy adott részére, és átadja neki a vezérlést. Aztán reménykedik, hogy ott tényleg egy
@@ -100,7 +102,7 @@
                 <h2>Programozás</h2>
 
                 <p>A Mandelbrot halmazhoz már kell egy kis grafika, vannak benne lebegőpontos műveletek, raktam bele
-                    egérkezelést (kicsit bugos) stb. Ez már túl nagy és nem fér bele egy szektorba, szóval két lépéses
+                    egérkezelést (kicsit bugos) stb. Ez már túl nagy és nem fér bele egy szektorba, szóval kétlépéses
                     bootloadert kellett írni, ami az elején gyorsan betölti a program lényegi részét, aztán
                     átugrik arra.
                 </p>
@@ -108,39 +110,40 @@
                 <p>Hát, nem volt egyszerű összehozni, mert debuggolni nem igazán lehetett. Amikor már
                     nagyon szenvedtem a lebegőpontos számokkal, csináltam hozzá egy kis teszt outputot,
                     de persze az már túlzás lett volna, hogy a számokat olvasható formában írjam ki,
-                    maradt a 64 bites float reprezentáció és egy web oldal, ami lefordítja emberi nyelvre.
+                    maradt a 64 bites float reprezentáció és egy weboldal, ami lefordítja emberi nyelvre.
                 </p>
 
                 <p>Mikor már elég jól működött Qemuban, kezdtem vérszemet kapni és megpróbáltam
-                    VirtualBoxban is elindítani. Na ná hogy nem ment... Mint kiderült a lebegőpontos regisztereknek
+                    VirtualBoxban is elindítani. Naná hogy nem ment... Mint kiderült a lebegőpontos regisztereknek
                     fenntartott stack VirtualBoxban nem szeret túlcsordulni, mert utána már NaN lesz minden művelet
-                    eredménye. (Mondanom se kell, hogy eltartott egy ideig amíg erre rájöttem...)
+                    eredménye. Mondanom se kell, hogy eltartott egy ideig amíg erre rájöttem...
                 </p>
 
                 <h2>Egér</h2>
 
                 <p>Az egérkezelésről annyit, hogy ugye ezt manapság már mindenki természetesnek veszi,
-                    de amikor egy számítógép elindul nagyon keveset tud a kűlvilágról... Én egy PS2 kompatibilis
-                    egér vezérlőt találtam a StackOverflow-n, ami a 33h-s megszakításra csűcsűl és fogadja
-                    az egér eseményeket. PS2 sincs ma már, de az USB-s egerek szimulálják, és úgy tűnik azok a
-                    virtuális gépek is amiket próbáltam. Na persze az egér látszani magától nem fog, csak
-                    annyit tudunk, hogy mittomén... lefele mozdult 5 pixelt.
+                    de amikor egy számítógép elindul nagyon keveset tud a külvilágról... Én egy PS2 kompatibilis
+                    egér vezérlőt találtam a StackOverflow-n, ami a 33h-s megszakításra csücsül és fogadja
+                    az egér eseményeket. Ma már PS2 sincs, de az USB-s egerek szimulálják, és úgy tűnik azok a
+                    virtuális gépek is amiket próbáltam.
                 </p>
 
+                <p>Persze az egér látszani magától nem fog, csak annyit tudunk, hogy mittomén... lefele mozdult 5 pixelt.</p>
+
                 <p>Az egérkurzor rajzolást is külön meg kellett írni, az egér letakarja az alatta levő területet, 
-                    amit el kell menteni, hogy később, ha elmozdul majd vissza tudjuk  állítani. És persze mi 
+                    amit el kell menteni, hogy később, ha elmozdul majd vissza tudjuk állítani. És persze mi 
                     történik ha közben valaki az egér alatti területre akar rajzolni... Szóval igazán fapados 
-                    dologra tessenek gondolni.
+                    dologra tessenek gondolni...
                 </p>
 
             </div>
         </article>
     </main>
     <footer>
-        <p>2021 <a href="https://csokavar.hu">csokavar.hu</a> -
+        <p>2021 <a href="https://csokavar.hu">csokavar.hu</a>&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
             <img
                 src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNMTIgMGMtNi42MjYgMC0xMiA1LjM3My0xMiAxMiAwIDUuMzAyIDMuNDM4IDkuOCA4LjIwNyAxMS4zODcuNTk5LjExMS43OTMtLjI2MS43OTMtLjU3N3YtMi4yMzRjLTMuMzM4LjcyNi00LjAzMy0xLjQxNi00LjAzMy0xLjQxNi0uNTQ2LTEuMzg3LTEuMzMzLTEuNzU2LTEuMzMzLTEuNzU2LTEuMDg5LS43NDUuMDgzLS43MjkuMDgzLS43MjkgMS4yMDUuMDg0IDEuODM5IDEuMjM3IDEuODM5IDEuMjM3IDEuMDcgMS44MzQgMi44MDcgMS4zMDQgMy40OTIuOTk3LjEwNy0uNzc1LjQxOC0xLjMwNS43NjItMS42MDQtMi42NjUtLjMwNS01LjQ2Ny0xLjMzNC01LjQ2Ny01LjkzMSAwLTEuMzExLjQ2OS0yLjM4MSAxLjIzNi0zLjIyMS0uMTI0LS4zMDMtLjUzNS0xLjUyNC4xMTctMy4xNzYgMCAwIDEuMDA4LS4zMjIgMy4zMDEgMS4yMy45NTctLjI2NiAxLjk4My0uMzk5IDMuMDAzLS40MDQgMS4wMi4wMDUgMi4wNDcuMTM4IDMuMDA2LjQwNCAyLjI5MS0xLjU1MiAzLjI5Ny0xLjIzIDMuMjk3LTEuMjMuNjUzIDEuNjUzLjI0MiAyLjg3NC4xMTggMy4xNzYuNzcuODQgMS4yMzUgMS45MTEgMS4yMzUgMy4yMjEgMCA0LjYwOS0yLjgwNyA1LjYyNC01LjQ3OSA1LjkyMS40My4zNzIuODIzIDEuMTAyLjgyMyAyLjIyMnYzLjI5M2MwIC4zMTkuMTkyLjY5NC44MDEuNTc2IDQuNzY1LTEuNTg5IDguMTk5LTYuMDg2IDguMTk5LTExLjM4NiAwLTYuNjI3LTUuMzczLTEyLTEyLTEyeiIvPjwvc3ZnPg==">
-            <a href="https://github.com/encse/bootloader">bootloader</a>
+            <a href="https://github.com/encse/bootloader">encse/bootloader</a>
         </p>
     </footer>
 
