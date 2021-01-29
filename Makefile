@@ -31,7 +31,8 @@ boot.img: boot.bin
 	@echo ''
 	@echo "\033[32mCreating floppy image....\033[39;49m"
 	dd if=/dev/zero of=bin/boot.img bs=1024 count=1440 && dd if=bin/boot.bin of=bin/boot.img conv=notrunc 
-
+	cp bin/boot.img site
+	
 run: all
 	@echo ''
 	@echo "\033[32mStarting up Qemu.... Ctrl+C to exit\033[39;49m"

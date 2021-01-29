@@ -2,7 +2,7 @@
 
 A 16 bit bootloader written in assembly, featuring 320x200 graphics with 256 colors and mouse handling. 
 
-![screenshot](screenshot.png)
+![screenshot](site/screenshot.png)
 
 I used Qemu and Nasm on my mac for development:
 
