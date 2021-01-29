@@ -1,0 +1,154 @@
+<!doctype html>
+<title>Mandelbrot</title>
+
+<head lang="hu">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link href="app.css" type="text/css" rel="stylesheet" media="all" />
+    <script src="./v86/libv86.js"></script>
+    <script>
+        "use strict";
+
+        window.onload = function () {
+            const emulator = new V86Starter({
+                wasm_path: "./v86/v86.wasm",
+                memory_size: 1 * 1024 * 1024,
+                vga_memory_size: 1 * 1024 * 1024,
+                screen_container: document.getElementById("screen_container"),
+                bios: {
+                    url: "./v86/seabios.bin",
+                },
+                vga_bios: {
+                    url: "./v86/vgabios.bin",
+                },
+                fda: {
+                    url: "./boot.img",
+                },
+                autostart: true,
+            });
+
+            emulator.keyboard_send_keys(false);
+            emulator.mouse_set_status(false);
+
+            const canvas = document.getElementById("screen_canvas");
+            canvas.oncontextmenu = () => false;
+
+
+            canvas.addEventListener("mouseenter",
+                () => {
+                    emulator.keyboard_send_keys(true);
+                    emulator.mouse_set_status(true);
+                }
+            );
+
+            canvas.addEventListener("mouseleave",
+                () => {
+                    emulator.keyboard_send_keys(false);
+                    emulator.mouse_set_status(false);
+                }
+            );
+           
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <img src="mandelbrot.png" width="800px" />
+    </header>
+    <main>
+        <article>
+
+            <p class="heading">Készítettem egy kisebb bootloadert assemblyben. Először csak egy annyit tudott kiírni
+                a képernyőre, hogy Hello Zsófi, de ezt valahogy kevésnek éreztem, úgyhogy kis töprengés
+                után elhatároztam, hogy egy Mandelbrot halmaz rajzolót fogok készíteni. Ilyenekkel
+                sokat szórakoztam gyerek koromban, úgyhogy miért ne.
+            </p>
+
+            <div class="canvas" id="screen_container">
+                <div></div>
+                <canvas id="screen_canvas"></canvas>
+            </div>
+
+            <div class="columns">
+                <p>Ez a kis demó egy x86 emulátorban fut webassemblyben. Egy tisztességes emulátorban
+                    kb. 1000 gyorsabban működik, aki szeretné ki is próbálhatja ezzel a <a href="boot.img">floppy
+                        image</a>-el.
+                    Igazi gépen nem próbáltam, jóhogy... honnan lenne hozzá floppy meghajtóm meg kislemezem...
+                </p>
+
+                <h2>Első lépések</h2>
+
+                <p>A bootloaderekről azt érdemes tudni, hogy amikor egy PC elindul (ez még UEFI boot előtt volt)
+                    elkezd körülnézni a különböző meghajtók elején. Ha az első szektor végén megtalálja
+                    a boot szignatúrát (0xAA55), akkor nagyon megörül neki, betölti a szektort a memória
+                    egy adott részére, és átadja neki a vezérlést. Aztán reménykedik, hogy ott tényleg egy
+                    operációs rendszer betöltőjét találta, ami elkezdi tenni a dolgát.
+                </p>
+
+                <p>Mivel én is egy bootloadert írtam, nem használhattam semmit amit az oprendszer ad... Nincs fájl betöltés.
+                    Még a fájl fogalma se létezik. Csak a fizikai adathordozó van a szektoraival. A számítógéppel
+                    szállított BIOS (basic input/output system) néhány dologban segít, például ki tud írni szövegeket
+                    a képernyőre, vagy be tud tölteni szektorokat a diskről, de alapvetően nagyon fapados jószág.
+                </p>
+
+                <h2>Programozás</h2>
+
+                <p>A Mandelbrot halmazhoz már kell egy kis grafika, vannak benne lebegőpontos műveletek, raktam bele
+                    egérkezelést (kicsit bugos) stb. Ez már túl nagy és nem fér bele egy szektorba, szóval két lépéses
+                    bootloadert kellett írni, ami az elején gyorsan betölti a program lényegi részét, aztán
+                    átugrik arra.
+                </p>
+
+                <p>Hát, nem volt egyszerű összehozni, mert debuggolni nem igazán lehetett. Amikor már
+                    nagyon szenvedtem a lebegőpontos számokkal, csináltam hozzá egy kis teszt outputot,
+                    de persze az már túlzás lett volna, hogy a számokat olvasható formában írjam ki,
+                    maradt a 64 bites float reprezentáció és egy web oldal, ami lefordítja emberi nyelvre.
+                </p>
+
+                <p>Mikor már elég jól működött Qemuban, kezdtem vérszemet kapni és megpróbáltam
+                    VirtualBoxban is elindítani. Na ná hogy nem ment... Mint kiderült a lebegőpontos regisztereknek
+                    fenntartott stack VirtualBoxban nem szeret túlcsordulni, mert utána már NaN lesz minden művelet
+                    eredménye. (Mondanom se kell, hogy eltartott egy ideig amíg erre rájöttem...)
+                </p>
+
+                <h2>Egér</h2>
+
+                <p>Az egérkezelésről annyit, hogy ugye ezt manapság már mindenki természetesnek veszi,
+                    de amikor egy számítógép elindul nagyon keveset tud a kűlvilágról... Én egy PS2 kompatibilis
+                    egér vezérlőt találtam a StackOverflow-n, ami a 33h-s megszakításra csűcsűl és fogadja
+                    az egér eseményeket. PS2 sincs ma már, de az USB-s egerek szimulálják, és úgy tűnik azok a
+                    virtuális gépek is amiket próbáltam. Na persze az egér látszani magától nem fog, csak
+                    annyit tudunk, hogy mittomén... lefele mozdult 5 pixelt.
+                </p>
+
+                <p>Az egérkurzor rajzolást is külön meg kellett írni, az egér letakarja az alatta levő területet, 
+                    amit el kell menteni, hogy később, ha elmozdul majd vissza tudjuk  állítani. És persze mi 
+                    történik ha közben valaki az egér alatti területre akar rajzolni... Szóval igazán fapados 
+                    dologra tessenek gondolni.
+                </p>
+
+            </div>
+        </article>
+    </main>
+    <footer>
+        <p>2021 <a href="https://csokavar.hu">csokavar.hu</a> -
+            <img
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNMTIgMGMtNi42MjYgMC0xMiA1LjM3My0xMiAxMiAwIDUuMzAyIDMuNDM4IDkuOCA4LjIwNyAxMS4zODcuNTk5LjExMS43OTMtLjI2MS43OTMtLjU3N3YtMi4yMzRjLTMuMzM4LjcyNi00LjAzMy0xLjQxNi00LjAzMy0xLjQxNi0uNTQ2LTEuMzg3LTEuMzMzLTEuNzU2LTEuMzMzLTEuNzU2LTEuMDg5LS43NDUuMDgzLS43MjkuMDgzLS43MjkgMS4yMDUuMDg0IDEuODM5IDEuMjM3IDEuODM5IDEuMjM3IDEuMDcgMS44MzQgMi44MDcgMS4zMDQgMy40OTIuOTk3LjEwNy0uNzc1LjQxOC0xLjMwNS43NjItMS42MDQtMi42NjUtLjMwNS01LjQ2Ny0xLjMzNC01LjQ2Ny01LjkzMSAwLTEuMzExLjQ2OS0yLjM4MSAxLjIzNi0zLjIyMS0uMTI0LS4zMDMtLjUzNS0xLjUyNC4xMTctMy4xNzYgMCAwIDEuMDA4LS4zMjIgMy4zMDEgMS4yMy45NTctLjI2NiAxLjk4My0uMzk5IDMuMDAzLS40MDQgMS4wMi4wMDUgMi4wNDcuMTM4IDMuMDA2LjQwNCAyLjI5MS0xLjU1MiAzLjI5Ny0xLjIzIDMuMjk3LTEuMjMuNjUzIDEuNjUzLjI0MiAyLjg3NC4xMTggMy4xNzYuNzcuODQgMS4yMzUgMS45MTEgMS4yMzUgMy4yMjEgMCA0LjYwOS0yLjgwNyA1LjYyNC01LjQ3OSA1LjkyMS40My4zNzIuODIzIDEuMTAyLjgyMyAyLjIyMnYzLjI5M2MwIC4zMTkuMTkyLjY5NC44MDEuNTc2IDQuNzY1LTEuNTg5IDguMTk5LTYuMDg2IDguMTk5LTExLjM4NiAwLTYuNjI3LTUuMzczLTEyLTEyLTEyeiIvPjwvc3ZnPg==">
+            <a href="https://github.com/encse/bootloader">bootloader</a>
+        </p>
+    </footer>
+
+    <script>
+            (function (i, s, o, g, r, a, m) {
+                i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                    (i[r].q = i[r].q || []).push(arguments)
+                }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                    m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m);
+            })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+        ga('create', 'UA-203054-9', 'auto');
+        ga('send', 'pageview');
+    </script>
+</body>
+
+</html>

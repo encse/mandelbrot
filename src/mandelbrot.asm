@@ -105,7 +105,6 @@ handle_zoom:
     retn    8
 
 
-
 ; Function: draw_mandelbrot
 ;
 ; Inputs:   None
@@ -335,36 +334,36 @@ init_palette:
 ; DATA
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-    x            dw 0
-    y            dw 0
-    i            dw 0
+x            dw 0
+y            dw 0
+i            dw 0
 
-    c1           dq 0.0
-    c2           dq 0.0
-    z1           dq 0.0
-    z2           dq 0.0
-    tmp          dq 0.0
-    tmp2         dq 0.0
+c1           dq 0.0
+c2           dq 0.0
+z1           dq 0.0
+z2           dq 0.0
+tmp          dq 0.0
+tmp2         dq 0.0
 
-    const1       dq 1.0
-    const2       dq 2.0
-    const4       dq 4.0
-    log2_10_inv  dq 0.30102999566
+const1       dq 1.0
+const2       dq 2.0
+const4       dq 4.0
+log2_10_inv  dq 0.30102999566
 
-    width        dq 320.0
-    height       dq 200.0
+width        dq 320.0
+height       dq 200.0
 
-    world_x      dq -2.0
-    world_y      dq -1.0
-    world_width  dq 3.2
-    world_height dq 2.0
+world_x      dq -2.0
+world_y      dq -1.0
+world_width  dq 3.2
+world_height dq 2.0
 
-    zoom         dq 2.0
-    unzoom       dq 0.5
+zoom         dq 2.0
+unzoom       dq 0.5
 
-    screen_ptr  dw 0x0000
+screen_ptr   dw 0x0000
 
-    MAX_ITER    equ 253
+MAX_ITER     equ 253
 
 palette:
     db	0xff, 0x00, 0x00,    0xff, 0x06, 0x00,    0xff, 0x0c, 0x00,    0xff, 0x12, 0x00

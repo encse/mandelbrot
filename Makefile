@@ -23,6 +23,8 @@ boot.bin:  src/main.asm
 	@echo '                               ╫████              '
 	@echo '                                ╙█▌               '
 	@echo '                                                  '
+	@echo ''
+	@echo "\033[32mCreating boot.bin....\033[39;49m"
 	nasm -i src -fbin -o bin/boot.bin src/main.asm 
 
 boot.img: boot.bin
