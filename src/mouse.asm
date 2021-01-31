@@ -312,14 +312,14 @@ hide_cursor:        push    bp                          ; Function prologue
                     mov     ax, [bp - 2]
                     cmp     ax, 0
                     jl      .afterDraw
-                    cmp     ax, 319
+                    cmp     ax, 320
                     jge     .afterDraw
 
                     mov     ax, [bp - 4]
                    
                     cmp     ax, 0
                     jl      .afterDraw
-                    cmp     ax, 199
+                    cmp     ax, 200
                     jge     .afterDraw
 
                     ; we are good to draw, let's compute si and di
@@ -404,14 +404,14 @@ draw_cursor:        push    bp                          ; Function prologue
                     mov     ax, [bp - 2]
                     cmp     ax, 0
                     jl      .afterDraw
-                    cmp     ax, 319
+                    cmp     ax, 320
                     jge     .afterDraw
 
                     mov     ax, [bp - 4]
                    
                     cmp     ax, 0
                     jl      .afterDraw
-                    cmp     ax, 199
+                    cmp     ax, 200
                     jge     .afterDraw
 
                     ; we are good to draw, let's compute si and di
