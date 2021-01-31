@@ -383,42 +383,101 @@ hide_cursor:        push    bp                          ; Function prologue
 ;           Draws the mouse cursor to the screen saving the area that 
 ;           is under the mouse so that we can restore it later when the
 ;           cursor moves or disappears.
-draw_cursor:        pusha
-                    push    es
+draw_cursor:        push    bp                          ; Function prologue
+                    mov     bp, sp
+                    sub     sp, 8
+                    pusha
+
+                    push    es                  ; set es
                     push    VGA
                     pop     es
+
+                    mov     ax, [mouseX]
+                    mov     [bp - 2], ax        ; mouseX + icol
                     mov     ax, [mouseY]
-                    mov     cx, 320
-                    mul     cx
-                    add     ax, [mouseX]
-                    mov     di, ax
-                    mov     si, 0
+                    mov     [bp - 4], ax        ; mouseY + irow
+                    xor     ax, ax
+                    mov     [bp - 6], ax        ; icol
+                    mov     [bp - 8], ax        ; irow
 
-                    mov     ax, 0
-                    mov     bx, 0
+.loop:              ; check that the destination is within screen limits
+                    mov     ax, [bp - 2]
+                    cmp     ax, 0
+                    jl      .afterDraw
+                    cmp     ax, 319
+                    jge     .afterDraw
 
-.loop:              mov     cl, byte [es:di]
+                    mov     ax, [bp - 4]
+                   
+                    cmp     ax, 0
+                    jl      .afterDraw
+                    cmp     ax, 199
+                    jge     .afterDraw
+
+                    ; we are good to draw, let's compute si and di
+                    mov     bx, 320
+                    mul     bx
+                    add     ax, [bp - 2]
+                    mov     di, ax              ; target
+
+                    mov     ax, [bp - 8]
+                    mov     bx, CURSOR_WIDTH
+                    mul     bx
+                    add     ax, [bp - 6]
+                    mov     si, ax              ; src
+
+                    ; save original screen color
+                    mov     cl, byte [es:di]
                     mov     byte [areaUnderCursor + si], cl
 
+                    ; get color from cursor shape
                     mov     cl, byte [cursorShape + si]
+
+                    ; skip if transparent
                     cmp     cl, 0
                     jz      .afterDraw
+
+                    ; draw to screen
                     mov     byte [es:di], cl
 
-.afterDraw:         inc     si
-                    inc     di
-                    inc     bx
-                    cmp     bx, CURSOR_WIDTH
-                    jl      .loop
-                    xor     bx, bx
+.afterDraw:         ; increment icol
+                    mov     ax, [bp - 6]
+                    inc     ax
+                    cmp     ax, CURSOR_WIDTH
+                    jge     .nextRow
+                    
+                    ;  set icol and mouse + icol
+                    mov     [bp - 6], ax
+                    mov     ax, [bp - 2]
+                    inc     ax
+                    mov     [bp - 2], ax
 
-                    add     di, 320 - CURSOR_WIDTH
+                    jmp     .loop
+
+.nextRow:           ; reset icol and mouse + icol
+                    xor     ax, ax      
+                    mov     [bp - 6], ax
+                    mov     ax, [mouseX]
+                    mov     [bp - 2], ax
+
+                    ; increment irow
+                    mov     ax, [bp - 8]
                     inc     ax
                     cmp     ax, CURSOR_HEIGHT
-                    jl      .loop
+                    jge     .endLoop
 
-                    pop     es
+                    ;  set irow and mouse + irow
+                    mov     [bp - 8], ax
+                    mov     ax, [bp - 4]
+                    inc     ax
+                    mov     [bp - 4], ax
+                    jmp     .loop
+
+.endLoop:           pop     es
                     popa
+                
+                    mov     sp, bp
+                    pop     bp
                     ret
 
 
