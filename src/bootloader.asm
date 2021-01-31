@@ -4,7 +4,7 @@
 times 3-($-$$)      db      0x90                ; Support 2 or 3 byte encoded JMPs before BPB.
 
                     ; Dos 4.0 EBPB 1.44MB floppy
-OemName:            db      "csokavar.hu"
+OemName:            db      "csokavar"          ; 8 bytes
 bytesPerSector:     dw      512
 sectPerCluster:     db      1
 reservedSectors:    dw      1
@@ -21,8 +21,8 @@ driveNum:           db      0
 reserved:           db      0
 signature:          db      0x29
 volumeID:           dd      0x2d7e5a1a
-volumeLabel:        db      "MANDELBROT "
-fileSysType:        db      "FAT12   "
+volumeLabel:        db      "MANDELBROT "       ; 11 bytes
+fileSysType:        db      "FAT12   "          ; 8 bytes
 
 bootStart:          xor     ax, ax
                     mov     ds, ax
@@ -36,7 +36,7 @@ bootStart:          xor     ax, ax
 
                     ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH=02h:_Read_Sectors_From_Drive
 MAIN_START:         equ     0x7e00
-SECTOR_COUNT:       equ     (8192) / 512 - 1
+SECTOR_COUNT:       equ     8192 / 512 - 1
 START_SECTOR:       equ     2
 
                     mov     bx, MAIN_START      ; es:bx contains the buffer address

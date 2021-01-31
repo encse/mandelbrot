@@ -19,7 +19,7 @@
 ;                                ╫████           
 ;                                 ╙█▌            
 
-                    call    initGraphics
+mandelbrot:         call    initGraphics
 
                     push    palette
                     call    setPalette
