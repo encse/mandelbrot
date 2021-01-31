@@ -1,3 +1,27 @@
+
+;                                 ▄█▌            
+;                                ╫████           
+;                              ┌ ,███▌           
+;                        ██▄▄█████████████▄▄ ▄▄  
+;                       ┌▄████████████████████▀  
+;                      ████████████████████████  
+;                    ,██████████████████████████▀
+;         ██████▄▄   ███████████████████████████W
+;     . ███████████ ╫███████████████████████████¬
+;    ▄▄▄████████████╫█████████████████████████▀  
+;    ▀▀▀███████████████████████████████████████  
+;       ╠██████████ ╟███████████████████████████ 
+;         █▀████▀▀   ███████████████████████████M
+;                    `██████████████████████████▄
+;                      ████████████████████████  
+;                       ╙▀████████████████████▄  
+;                        ██▀▀█████████████▀▀ ▀▀  
+;                              └ `███▌           
+;                                ╫████           
+;                                 ╙█▌            
+
+MAX_ITER            equ     253
+
                     mov     ax, 13h                 ; Turn on graphics mode (320x200)
                     int     10h
 
@@ -5,10 +29,18 @@
                     call    mouse_start
 
 .loop:              call    draw_mandelbrot
-.waitClick:         hlt
+.waitClick:
+.waitMouseDown:     hlt
+                    mov     al, [buttonStatus]
+                    cmp     al, 0
+                    jz      .waitMouseDown
 
-                    mov     al, [curStatus]
-                    cmp     al, 0x9
+.waitMouseUp:       hlt
+                    mov     bl, [buttonStatus]
+                    cmp     bl, 0
+                    jnz     .waitMouseUp
+
+                    cmp     al, 0x1
                     jne    .l1
                     push    dword [zoom + 4]        ; left click
                     push    dword [zoom]
@@ -17,7 +49,7 @@
                     call    handle_zoom
                     jmp     .loop
 
-.l1:                cmp     al, 0xa
+.l1:                cmp     al, 0x2
                     jne    .waitClick               ; right click
                     push    dword [unzoom + 4]
                     push    dword [unzoom]
@@ -309,10 +341,7 @@ world_height        dq      2.0
 zoom                dq      2.0
 unzoom              dq      0.5
 
-MAX_ITER            equ     253
-
-palette:
-                    db      0xff, 0x00, 0x00,    0xff, 0x06, 0x00,    0xff, 0x0c, 0x00,    0xff, 0x12, 0x00
+palette:            db      0xff, 0x00, 0x00,    0xff, 0x06, 0x00,    0xff, 0x0c, 0x00,    0xff, 0x12, 0x00
                     db      0xff, 0x18, 0x00,    0xff, 0x1e, 0x00,    0xff, 0x24, 0x00,    0xff, 0x2a, 0x00
                     db      0xff, 0x30, 0x00,    0xff, 0x36, 0x00,    0xff, 0x3c, 0x00,    0xff, 0x42, 0x00
                     db      0xff, 0x48, 0x00,    0xff, 0x4e, 0x00,    0xff, 0x54, 0x00,    0xff, 0x5a, 0x00

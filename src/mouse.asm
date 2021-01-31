@@ -253,7 +253,8 @@ mouse_callback:     push    bp                          ; Function prologue
 
 
                     ; Status
-                    mov     [curStatus], bl             ; Update the current status with the new bits
+                    and     bl, 3                       ; Keep two lowest bits (left and rigth button clicked)
+                    mov     [buttonStatus], bl          ; Update the current status with the new bits
                     cmp     ax, 0
                     jge     .j1
                     mov     ax, 0
@@ -487,7 +488,7 @@ draw_cursor:        push    bp                          ; Function prologue
 
 mouseX:             dw      0              ; Current mouse X coordinate
 mouseY:             dw      0              ; Current mouse Y coordinate
-curStatus:          db      0              ; Current mouse status
+buttonStatus:       db      0              ; 1: left, 2: right button clicked, 3: both
 noMouseMsg:         db      `Error setting up & initializing mouse\r\n`, 0
 
 cursorShape:        db      254,   0,   0,   0,   0,
