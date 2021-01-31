@@ -1,52 +1,46 @@
 ; https://stackoverflow.com/questions/54280828/making-a-mouse-handler-in-x86-assembly
 
-HW_EQUIP_PS2:       equ     4          ; PS2 mouse installed?
-MOUSE_PKT_BYTES:    equ     3          ; Number of bytes in mouse packet
-MOUSE_RESOLUTION:   equ     2          ; Mouse resolution 8 counts/mm
-
-; Function: mouse_start
+; Function: mouseStart
 ;
 ; Inputs:   None
 ; Returns:  None
 ; Clobbers: AX
-mouse_start:        
-
-                    call    mouse_initialize
-                    call    mouse_enable                ; Enable the mouse
+mouseStart:         call    mouseInitialize
+                    call    mouseEnable                 ; Enable the mouse
                     ret
 
 
-; Function: mouse_initialize
+; Function: mouseInitialize
 ;           Initialize the mouse if present
 ;
 ; Inputs:   None
 ; Returns:  CF = 1 if error, CF=0 success
 ; Clobbers: AX
-mouse_initialize:   push    es
+mouseInitialize:    push    es
                     push    bx
-                
+
                     int     0x11                        ; Get equipment list
-                    test    ax, HW_EQUIP_PS2            ; Is a PS2 mouse installed?
+                    test    ax, HW_EQUIP_PS2            ; Is a PS/2 mouse installed?
                     jz      .no_mouse                   ;     if not print error and end
-                
+
                     mov     ax, 0xC205                  ; Initialize mouse
                     mov     bh, MOUSE_PKT_BYTES         ; 3 byte packets
                     int     0x15                        ; Call BIOS to initialize
                     jc      .no_mouse                   ;    If not successful assume no mouse
-                
+
                     mov     ax, 0xC203                  ; Set resolution
                     mov     bh, MOUSE_RESOLUTION        ; 8 counts / mm
                     int     0x15                        ; Call BIOS to set resolution
                     jc      .no_mouse                   ;    If not successful assume no mouse
-                
+
                     push    cs
                     pop     es                          ; ES = segment where code and mouse handler reside
-                
-                    mov     bx, mouse_callback_dummy
+
+                    mov     bx, mouseCallbackDummy
                     mov     ax, 0xC207                  ; Install a default null handler (ES:BX)
                     int     0x15                        ; Call BIOS to set callback
                     jc      .no_mouse                   ;    If not successful assume no mouse
-                
+
                     clc                                 ; CF=0 is success
                     jmp     .finished
 
@@ -55,20 +49,20 @@ mouse_initialize:   push    es
                     pop     es
                     ret
 
-; Function: mouse_enable
+; Function: mouseEnable
 ;           Enable the mouse
 ;
 ; Inputs:   None
 ; Returns:  None
 ; Clobbers: AX
-mouse_enable:       push    es
+mouseEnable:        push    es
                     push    bx
 
-                    call    mouse_disable               ; Disable mouse before enabling
+                    call    mouseDisable               ; Disable mouse before enabling
 
                     push    cs
                     pop     es
-                    mov     bx, mouse_callback
+                    mov     bx, mouseCallback
                     mov     ax, 0xC207                  ; Set mouse callback function (ES:BX)
                     int     0x15                        ; Call BIOS to set callback
 
@@ -81,13 +75,13 @@ mouse_enable:       push    es
                     ret
 
 
-; Function: mouse_disable
+; Function: mouseDisable
 ;           Disable the mouse
 ;
 ; Inputs:   None
 ; Returns:  None
 ; Clobbers: AX
-mouse_disable:      push    es
+mouseDisable:       push    es
                     push    bx
 
                     mov     ax, 0xC200                  ; Enable/Disable mouse
@@ -96,13 +90,13 @@ mouse_disable:      push    es
 
                     mov     es, bx
                     mov     ax, 0xC207                  ; Clear callback function (ES:BX=0:0)
-                    int     0x15                        ; Call BIOS to set callback
+                    int     0x15                       ; Call BIOS to set callback
 
                     pop     bx
                     pop     es
                     ret
 
-; Function: mouse_callback (FAR)
+; Function: mouseCallback (FAR)
 ;           called by the interrupt handler to process a mouse data packet
 ;           All registers that are modified must be saved and restored
 ;           Since we are polling manually this handler does nothing
@@ -114,7 +108,7 @@ mouse_disable:      push    es
 ;
 ; Returns:  None
 ; Clobbers: None
-mouse_callback:     push    bp                          ; Function prologue
+mouseCallback:      push    bp                          ; Function prologue
                     mov     bp, sp
                     push    ds                          ; Save registers we modify
                     push    ax
@@ -127,7 +121,7 @@ mouse_callback:     push    bp                          ; Function prologue
                     push    cs
                     pop     ds                          ; DS = CS, CS = where our variables are stored
 
-                    call    hide_cursor
+                    call    hideCursor
 
                     mov     al, [bp + 12]
                     mov     bl, al                      ; BX = copy of status byte
@@ -139,7 +133,6 @@ mouse_callback:     push    bp                          ; Function prologue
                     mov     dl, [bp + 8]                ; CX = movementY
                     mov     al, [bp + 10]               ; AX = movementX
 
-
                     ; new mouse X_coord = X_Coord + movementX
                     ; new mouse Y_coord = Y_Coord + (-movementY)
                     neg     dx
@@ -147,7 +140,6 @@ mouse_callback:     push    bp                          ; Function prologue
                     add     dx, cx                      ; DX = new mouse Y_coord
                     mov     cx, [mouseX]
                     add     ax, cx                      ; AX = new mouse X_coord
-
 
                     ; Status
                     and     bl, 3                       ; Keep two lowest bits (left and rigth button clicked)
@@ -171,7 +163,7 @@ mouse_callback:     push    bp                          ; Function prologue
 .j4:                mov     [mouseX], ax                ; Update current virtual mouseX coord
                     mov     [mouseY], dx                ; Update current virtual mouseY coord
 
-                    call    draw_cursor
+                    call    drawCursor
 
                     pop     di
                     pop     es
@@ -183,16 +175,17 @@ mouse_callback:     push    bp                          ; Function prologue
                     pop     bp                          ; Function epilogue
 
 
-mouse_callback_dummy: 
-                    retf                                ; This routine was reached via FAR CALL. Need a FAR RET
-
+mouseCallbackDummy: retf                                ; This routine was reached via FAR CALL. Need a FAR RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; DATA
 ;;;;;;;;;;;;;;;;;;;;;;;
+HW_EQUIP_PS2:       equ     4          ; PS/2 mouse installed?
+MOUSE_PKT_BYTES:    equ     3          ; Number of bytes in mouse packet
+MOUSE_RESOLUTION:   equ     2          ; Mouse resolution 8 counts/mm
 
-mouseX:             dw      0              ; Current mouse X coordinate
-mouseY:             dw      0              ; Current mouse Y coordinate
-buttonStatus:       db      0              ; 1: left, 2: right button clicked, 3: both
+mouseX:             dw      0          ; Current mouse X coordinate
+mouseY:             dw      0          ; Current mouse Y coordinate
+buttonStatus:       db      0          ; 1: left, 2: right button clicked, 3: both
 noMouseMsg:         db      `Error setting up & initializing mouse\r\n`, 0
 

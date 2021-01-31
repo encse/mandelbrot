@@ -1,4 +1,3 @@
-
 ;                                 ▄█▌            
 ;                                ╫████           
 ;                              ┌ ,███▌           
@@ -20,15 +19,13 @@
 ;                                ╫████           
 ;                                 ╙█▌            
 
-MAX_ITER:           equ     254
-
-                    call    init_graphics
+                    call    initGraphics
 
                     push    palette
-                    call    set_palette
+                    call    setPalette
 
-                    call    mouse_start
-.loop:              call    draw_mandelbrot
+                    call    mouseStart
+.loop:              call    drawMandelbrot
 .waitClick:
 .waitMouseDown:     hlt
                     mov     al, [buttonStatus]
@@ -40,26 +37,28 @@ MAX_ITER:           equ     254
                     cmp     bl, 0
                     jnz     .waitMouseUp
 
-                    cmp     al, 0x1
+                    cmp     al, 1                   ; left click
                     jne    .l1
-                    push    dword [zoom + 4]        ; left click
+
+                    push    dword [zoom + 4]
                     push    dword [zoom]
                     push    word  [mouseY]
                     push    word  [mouseX]
-                    call    handle_zoom
+                    call    handleZoom
                     jmp     .loop
 
-.l1:                cmp     al, 0x2
-                    jne    .waitClick               ; right click
+.l1:                cmp     al, 2                   ; right click
+                    jne    .waitClick
+
                     push    dword [unzoom + 4]
                     push    dword [unzoom]
                     push    word  [mouseY]
                     push    word  [mouseX]
-                    call    handle_zoom
+                    call    handleZoom
                     jmp     .loop
 
 
-; Function: handle_zoom
+; Function: handleZoom
 ;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor
 ; Inputs:   SP+4   = x
 ;           SP+6   = y
@@ -67,78 +66,78 @@ MAX_ITER:           equ     254
 ; Returns:  None
 ; Clobbers: None
 
-handle_zoom:        push    sp
+handleZoom:         push    sp
                     mov     bp, sp
 
                     finit
 
-                    ; world_x =  world_x +  (world_width * mouse_x / width) - (world_width / zoom / 2)
-                    fld     qword [world_x]
+                    ; worldX =  worldX +  (worldWidth * mouse_x / width) - (worldWidth / zoom / 2)
+                    fld     qword [worldX]
                     fld     qword [width]
                     fild    word [bp + 4]
-                    fld     qword [world_width]
+                    fld     qword [worldWidth]
                     fmul    st1
                     fdiv    st2
                     fadd    st3
                     fld     qword [bp + 8]
                     fld     qword [const2]
                     fmulp   st1
-                    fld     qword [world_width]
+                    fld     qword [worldWidth]
                     fdiv    st1
                     fsubr   st2
-                    fstp    qword [world_x]
+                    fstp    qword [worldX]
                     fstp    st0
                     fstp    st0
                     fstp    st0
                     fstp    st0
                     fstp    st0
 
-                    ; ; ; world_width = world_width / zoom
+                    ; ; ; worldWidth = worldWidth / zoom
                     fld     qword [bp + 8]
-                    fld     qword [world_width]
+                    fld     qword [worldWidth]
                     fdiv    st1
-                    fstp    qword [world_width]
+                    fstp    qword [worldWidth]
                     fstp    st0
 
-                    ; ; world_y =  world_y +  (world_height * mouse_y / height) - (world_height / zoom / 2)
-                    fld     qword [world_y]
+                    ; ; worldY =  worldY +  (worldHeight * mouse_y / height) - (worldHeight / zoom / 2)
+                    fld     qword [worldY]
                     fld     qword [height]
                     fild    word [bp + 6]
-                    fld     qword [world_height]
+                    fld     qword [worldHeight]
                     fmul    st1
                     fdiv    st2
                     fadd    st3
                     fld     qword [bp + 8]
                     fld     qword [const2]
                     fmulp   st1
-                    fld     qword [world_height]
+                    fld     qword [worldHeight]
                     fdiv    st1
                     fsubr   st2
-                    fstp    qword [world_y]
+                    fstp    qword [worldY]
                     fstp    st0
                     fstp    st0
                     fstp    st0
                     fstp    st0
                     fstp    st0
 
-                    ; world_height = world_height / 10
+                    ; worldHeight = worldHeight / 10
                     fld     qword [bp + 8]
-                    fld     qword [world_height]
+                    fld     qword [worldHeight]
                     fdiv    st1
-                    fstp    qword [world_height]
+                    fstp    qword [worldHeight]
                     fstp    st0
 
                     pop     sp
                     retn    8
 
 
-; Function: draw_mandelbrot
+; Function: drawMandelbrot
 ;
 ; Inputs:   None
 ; Returns:  None
 ; Clobbers: None
 
-draw_mandelbrot:    push    sp
+drawMandelbrot:     push    sp
                     mov     bp, sp
 
                     finit
@@ -166,11 +165,11 @@ draw_mandelbrot:    push    sp
                     fst     qword [z1]
                     fstp    qword [z2]
 
-                    ; $c1 = $world_x + world_width / width * x;
-                    fld     qword [world_x]
+                    ; $c1 = $worldX + worldWidth / width * x;
+                    fld     qword [worldX]
                     fild    word [x]
                     fld     qword [width]
-                    fld     qword [world_width]
+                    fld     qword [worldWidth]
                     fdiv    st1
                     fmul    st2
                     fadd    st3
@@ -180,10 +179,10 @@ draw_mandelbrot:    push    sp
                     fstp    st0
 
                     ; $c2 = $min_y + ($max_y - $min_y) / $height * $y;
-                    fld     qword [world_y]
+                    fld     qword [worldY]
                     fild    word [y]
                     fld     qword [height]
-                    fld     qword [world_height]
+                    fld     qword [worldHeight]
                     fdiv    st1
                     fmul    st2
                     fadd    st3
@@ -258,7 +257,7 @@ draw_mandelbrot:    push    sp
 .j1:                push    cx
                     push    dx
                     push    ax
-                    call    set_pixel
+                    call    setPixel
 
 .nextx:             inc     cx
                     mov     [x], cx
@@ -274,12 +273,10 @@ draw_mandelbrot:    push    sp
 .yloopend:          pop     sp
                     ret
 
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; DATA
 ;;;;;;;;;;;;;;;;;;;;;;;
+MAX_ITER:           equ     254
 
 x:                  dw      0
 y:                  dw      0
@@ -300,10 +297,10 @@ log2_10_inv:        dq      0.30102999566
 width:              dq      320.0
 height:             dq      200.0
 
-world_x:            dq      -2.0
-world_y:            dq      -1.0
-world_width:        dq      3.2
-world_height:       dq      2.0
+worldX:             dq      -2.0
+worldY:             dq      -1.0
+worldWidth:         dq      3.2
+worldHeight:        dq      2.0
 
 zoom:               dq      2.0
 unzoom:             dq      0.5

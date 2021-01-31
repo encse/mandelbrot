@@ -1,29 +1,26 @@
-VGA:                equ     0xa000
-VIDEO_MODE:         equ     13h
-
-; Function: init_graphics
+; Function: initGraphics
 ; Inputs:   None
 ; Returns:  None
 ; Clobbers: None
-init_graphics:      mov     ax, VIDEO_MODE      ; Turn on graphics mode (320x200)
-                    int     10h
+initGraphics:       mov     ax, VIDEO_MODE      ; Turn on graphics mode (320x200)
+                    int     0x10
                     ret
 
-; Function: set_palette
+; Function: setPalette
 ; Inputs:   SP + 2: near pointer to palette with 256 * 3 bytes with R,G,B colors
 ; Returns:  None
 ; Clobbers: None
-set_palette:        push    bp
+setPalette:         push    bp
                     mov     bp, sp
                     pusha
 
                     ;; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
-                    ;; INT 10H 1010H: Set One DAC Color Register
-                    ;; Expects: AX    1010H
+                    ;; INT 0x10 0x1010: Set One DAC Color Register
+                    ;; Expects: AX    0x1010
                     ;;          BX    color register to set (0-255)
-                    ;;          DH    red value   (00H-3fH)
-                    ;;          CH    green value (00H-3fH)
-                    ;;          CL    blue value  (00H-3fH)
+                    ;;          DH    red value   (0-255)
+                    ;;          CH    green value (0-255)
+                    ;;          CL    blue value  (0-255)
                     mov     ax, [bp + 4]
                     mov     di, ax
                     xor     bx, bx
@@ -34,8 +31,8 @@ set_palette:        push    bp
                     inc     di
                     mov     cl,  [di]
                     inc     di
-                    mov     ax, 1010h
-                    int     10h
+                    mov     ax, 0x1010
+                    int     0x10
 
                     inc     bx
                     cmp     bx, 256
@@ -46,7 +43,7 @@ set_palette:        push    bp
                     pop     bp
                     ret     2
 
-; Function: set_pixel
+; Function: setPixel
 ;           Set the color of (x,y) to the given color in a mouse-aware way.
 ;
 ; Inputs:   SP + 8   = x
@@ -54,7 +51,7 @@ set_palette:        push    bp
 ;           SP + 4   = color
 ; Returns:  None
 ; Clobbers: None
-set_pixel:          push    bp
+setPixel:           push    bp
                     mov     bp, sp
                     push    es
                     push    di
@@ -124,9 +121,9 @@ set_pixel:          push    bp
                     pop     bp
                     retn    6
 
-; Function: hide_cursor
+; Function: hideCursor
 ;           Restores the area that was covered by the mouse
-hide_cursor:        push    bp
+hideCursor:         push    bp
                     mov     bp, sp
                     sub     sp, 8
                     pusha
@@ -151,7 +148,7 @@ hide_cursor:        push    bp
                     jge     .afterDraw
 
                     mov     ax, [bp - 4]
-                   
+
                     cmp     ax, 0
                     jl      .afterDraw
                     cmp     ax, 200
@@ -178,7 +175,7 @@ hide_cursor:        push    bp
                     inc     ax
                     cmp     ax, CURSOR_WIDTH
                     jge     .nextRow
-                    
+
                     ;  set icol and mouse + icol
                     mov     [bp - 6], ax
                     mov     ax, [bp - 2]
@@ -188,7 +185,7 @@ hide_cursor:        push    bp
                     jmp     .loop
 
 .nextRow:           ; reset icol and mouse + icol
-                    xor     ax, ax      
+                    xor     ax, ax
                     mov     [bp - 6], ax
                     mov     ax, [mouseX]
                     mov     [bp - 2], ax
@@ -208,16 +205,16 @@ hide_cursor:        push    bp
 
 .endLoop:           pop     es
                     popa
-                
+
                     mov     sp, bp
                     pop     bp
                     ret
 
-; Function: draw_cursor
-;           Draws the mouse cursor to the screen saving the area that 
+; Function: drawCursor
+;           Draws the mouse cursor to the screen saving the area that
 ;           is under the mouse so that we can restore it later when the
 ;           cursor moves or disappears.
-draw_cursor:        push    bp                          ; Function prologue
+drawCursor:         push    bp
                     mov     bp, sp
                     sub     sp, 8
                     pusha
@@ -242,7 +239,7 @@ draw_cursor:        push    bp                          ; Function prologue
                     jge     .afterDraw
 
                     mov     ax, [bp - 4]
-                   
+
                     cmp     ax, 0
                     jl      .afterDraw
                     cmp     ax, 200
@@ -279,7 +276,7 @@ draw_cursor:        push    bp                          ; Function prologue
                     inc     ax
                     cmp     ax, CURSOR_WIDTH
                     jge     .nextRow
-                    
+
                     ;  set icol and mouse + icol
                     mov     [bp - 6], ax
                     mov     ax, [bp - 2]
@@ -289,7 +286,7 @@ draw_cursor:        push    bp                          ; Function prologue
                     jmp     .loop
 
 .nextRow:           ; reset icol and mouse + icol
-                    xor     ax, ax      
+                    xor     ax, ax
                     mov     [bp - 6], ax
                     mov     ax, [mouseX]
                     mov     [bp - 2], ax
@@ -309,7 +306,7 @@ draw_cursor:        push    bp                          ; Function prologue
 
 .endLoop:           pop     es
                     popa
-                
+
                     mov     sp, bp
                     pop     bp
                     ret
@@ -317,6 +314,10 @@ draw_cursor:        push    bp                          ; Function prologue
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; DATA
 ;;;;;;;;;;;;;;;;;;;;;;;
+
+VGA:                equ     0xa000
+VIDEO_MODE:         equ     0x13
+
 cursorShape:        db      255,   0,   0,   0,   0,
 .r2:                db      255, 255,   0,   0,   0,
                     db      255, 255, 255,   0,   0,
@@ -326,8 +327,8 @@ cursorShape:        db      255,   0,   0,   0,   0,
                     db      255,   0, 255, 255,   0,
                     db        0,   0, 255, 255,   0,
 
-CURSOR_WIDTH        equ     (.r2 - cursorShape)
-CURSOR_HEIGHT       equ     ($ - cursorShape) / CURSOR_WIDTH
+CURSOR_WIDTH:       equ     (.r2 - cursorShape)
+CURSOR_HEIGHT:      equ     ($ - cursorShape) / CURSOR_WIDTH
 
 areaUnderCursor:
 times CURSOR_HEIGHT * CURSOR_WIDTH db 0

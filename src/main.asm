@@ -4,4 +4,3 @@
 %include "graphics.asm"
 
 times 8192 - ($-$$) db      0
-
