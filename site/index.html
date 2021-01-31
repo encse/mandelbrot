@@ -75,9 +75,9 @@
             </div>
 
             <div class="columns">
-                <p>Ez a kis demó egy x86 emulátorban fut webassemblyben. Egy tisztességes emulátorban
-                    kb. 1000x gyorsabban működik, aki szeretné ki is próbálhatja ezzel a <a href="boot.img">floppy
-                    image</a>-el.
+                <p>Ez a kis demó egy x86 emulátorban fut webassemblyben. Egy tisztességes emulátorban mint például
+                    a VirtualBox, kb. 1000x gyorsabban működik, aki szeretné ki is próbálhatja ezzel 
+                    a <a href="boot.img">floppy image</a>-el.
                 </p>
                 <p>
                     Igazi gépen nem próbáltam, jóhogy... honnan lenne hozzá floppy meghajtóm meg kislemezem...
@@ -101,7 +101,7 @@
                 <h2>Programozás</h2>
 
                 <p>A Mandelbrot halmazhoz már kell egy kis grafika, vannak benne lebegőpontos műveletek, raktam bele
-                    egérkezelést (kicsit bugos) stb. Ez már túl nagy és nem fér bele egy szektorba, szóval kétlépéses
+                    egérkezelést stb. Ez már túl nagy és nem fér bele egy szektorba, szóval kétlépéses
                     bootloadert kellett írni, ami az elején gyorsan betölti a program lényegi részét, aztán
                     átugrik arra.
                 </p>
@@ -131,8 +131,8 @@
 
                 <p>Az egérkurzor rajzolást is külön meg kellett írni, az egér letakarja az alatta levő területet, 
                     amit el kell menteni, hogy később, ha elmozdul majd vissza tudjuk állítani. És persze mi 
-                    történik ha közben valaki az egér alatti területre akar rajzolni... Szóval igazán fapados 
-                    dologra tessenek gondolni...
+                    történik ha közben valaki az egér alatti területre akar rajzolni, vagy a fele kilóg oldalt
+                    vagy alul a képernyőről... Szóval igazán fapados dologra tessenek gondolni...
                 </p>
 
             </div>
