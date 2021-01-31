@@ -86,8 +86,5 @@ print_string:       pusha
 ; Returns:  Never
 terminate:          jmp     $
 
-;
-
 times 510 - ($-$$)  db      0           ; Fill the rest of sector with 0
                     dw      0xAA55      ; Add boot signature at the end of bootloader
-

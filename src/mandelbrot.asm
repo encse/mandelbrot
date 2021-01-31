@@ -22,12 +22,12 @@
 
 MAX_ITER            equ     253
 
-                    mov     ax, 13h                 ; Turn on graphics mode (320x200)
-                    int     10h
+                    call    init_graphics
 
-                    call    init_palette
+                    push    palette
+                    call    set_palette
+
                     call    mouse_start
-
 .loop:              call    draw_mandelbrot
 .waitClick:
 .waitMouseDown:     hlt
@@ -275,40 +275,7 @@ draw_mandelbrot:    push    sp
                     ret
 
 
-; Function: init_palette
-;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor
-; Inputs:   None
-; Returns:  None
-; Clobbers: None
-init_palette:       pusha
 
-                    ;; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
-                    ;; INT 10H 1010H: Set One DAC Color Register
-                    ;; Expects: AX    1010H
-                    ;;          BX    color register to set (0-255)
-                    ;;          DH    red value   (00H-3fH)
-                    ;;          CH    green value (00H-3fH)
-                    ;;          CL    blue value  (00H-3fH)
-
-                    mov     di, palette
-                    mov     [tmp], byte 0
-                    xor     bx, bx
-
-.loop:              mov     dh,  [di]
-                    inc     di
-                    mov     ch,  [di]
-                    inc     di
-                    mov     cl,  [di]
-                    inc     di
-                    mov     ax, 1010h
-                    int     10h
-
-                    inc     bx
-                    cmp     bx, 256
-                    jl      .loop
-
-                    popa
-                    ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; DATA
@@ -340,6 +307,7 @@ world_height        dq      2.0
 
 zoom                dq      2.0
 unzoom              dq      0.5
+
 
 palette:            db      0xff, 0x00, 0x00,    0xff, 0x06, 0x00,    0xff, 0x0c, 0x00,    0xff, 0x12, 0x00
                     db      0xff, 0x18, 0x00,    0xff, 0x1e, 0x00,    0xff, 0x24, 0x00,    0xff, 0x2a, 0x00
