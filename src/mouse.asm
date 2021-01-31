@@ -4,30 +4,12 @@ HW_EQUIP_PS2:       equ     4          ; PS2 mouse installed?
 MOUSE_PKT_BYTES:    equ     3          ; Number of bytes in mouse packet
 MOUSE_RESOLUTION:   equ     2          ; Mouse resolution 8 counts/mm
 
-mouse_start:        ; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
-                    ; INT 10H 1010H: Set One DAC Color Register
-                    ; Expects: AX    1010H
-                    ;          BX    color register to set (0-255)
-                    ;          CH    green value (00H-3fH)
-                    ;          CL    blue value  (00H-3fH)
-                    ;          DH    red value   (00H-3fH)
-
-                    mov     bx, 255
-                    mov     dh, 255
-                    mov     ch, 255
-                    mov     cl, 255
-
-                    mov     ax, 1010h
-                    int     10h
-
-                    mov     bx, 254
-                    mov     dh, 255
-                    mov     ch, 255
-                    mov     cl, 255
-
-                    mov     ax, 1010h
-                    int     10h
-
+; Function: mouse_start
+;
+; Inputs:   None
+; Returns:  None
+; Clobbers: AX
+mouse_start:        
 
                     call    mouse_initialize
                     call    mouse_enable                ; Enable the mouse
@@ -72,7 +54,6 @@ mouse_initialize:   push    es
 .finished:          pop     bx
                     pop     es
                     ret
-
 
 ; Function: mouse_enable
 ;           Enable the mouse
@@ -133,7 +114,6 @@ mouse_disable:      push    es
 ;
 ; Returns:  None
 ; Clobbers: None
-ARG_OFFSETS:        equ     6                           ; Offset of args from BP
 mouse_callback:     push    bp                          ; Function prologue
                     mov     bp, sp
                     push    ds                          ; Save registers we modify
@@ -149,15 +129,15 @@ mouse_callback:     push    bp                          ; Function prologue
 
                     call    hide_cursor
 
-                    mov     al, [bp+ARG_OFFSETS+6]
+                    mov     al, [bp + 12]
                     mov     bl, al                      ; BX = copy of status byte
                     mov     cl, 3                       ; Shift signY (bit 5) left 3 bits
                     shl     al, cl                      ; CF = signY
                                                         ; Sign bit of AL = SignX
                     sbb     dh, dh                      ; CH = SignY value set in all bits
                     cbw                                 ; AH = SignX value set in all bits
-                    mov     dl, [bp+ARG_OFFSETS+2]      ; CX = movementY
-                    mov     al, [bp+ARG_OFFSETS+4]      ; AX = movementX
+                    mov     dl, [bp + 8]                ; CX = movementY
+                    mov     al, [bp + 10]               ; AX = movementX
 
 
                     ; new mouse X_coord = X_Coord + movementX

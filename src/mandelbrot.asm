@@ -20,7 +20,7 @@
 ;                                ╫████           
 ;                                 ╙█▌            
 
-MAX_ITER            equ     253
+MAX_ITER:           equ     254
 
                     call    init_graphics
 
@@ -253,7 +253,7 @@ draw_mandelbrot:    push    sp
                 
                     cmp     ax, MAX_ITER
                     jl      .j1
-                    mov     ax, 253         ; the last 2 items of the palette are used by the mouse
+                    mov     ax, MAX_ITER         ; the last 2 items of the palette are used by the mouse
 
 .j1:                push    cx
                     push    dx
@@ -281,33 +281,32 @@ draw_mandelbrot:    push    sp
 ; DATA
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-x                   dw      0
-y                   dw      0
-i                   dw      0
+x:                  dw      0
+y:                  dw      0
+i:                  dw      0
         
-c1                  dq      0.0
-c2                  dq      0.0
-z1                  dq      0.0
-z2                  dq      0.0
-tmp                 dq      0.0
-tmp2                dq      0.0
+c1:                 dq      0.0
+c2:                 dq      0.0
+z1:                 dq      0.0
+z2:                 dq      0.0
+tmp:                dq      0.0
+tmp2:               dq      0.0
         
-const1              dq      1.0
-const2              dq      2.0
-const4              dq      4.0
-log2_10_inv         dq      0.30102999566
+const1:             dq      1.0
+const2:             dq      2.0
+const4:             dq      4.0
+log2_10_inv:        dq      0.30102999566
         
-width               dq      320.0
-height              dq      200.0
+width:              dq      320.0
+height:             dq      200.0
 
-world_x             dq      -2.0
-world_y             dq      -1.0
-world_width         dq      3.2
-world_height        dq      2.0
+world_x:            dq      -2.0
+world_y:            dq      -1.0
+world_width:        dq      3.2
+world_height:       dq      2.0
 
-zoom                dq      2.0
-unzoom              dq      0.5
-
+zoom:               dq      2.0
+unzoom:             dq      0.5
 
 palette:            db      0xff, 0x00, 0x00,    0xff, 0x06, 0x00,    0xff, 0x0c, 0x00,    0xff, 0x12, 0x00
                     db      0xff, 0x18, 0x00,    0xff, 0x1e, 0x00,    0xff, 0x24, 0x00,    0xff, 0x2a, 0x00
@@ -372,4 +371,4 @@ palette:            db      0xff, 0x00, 0x00,    0xff, 0x06, 0x00,    0xff, 0x0c
                     db      0xff, 0x00, 0x60,    0xff, 0x00, 0x5a,    0xff, 0x00, 0x54,    0xff, 0x00, 0x4e
                     db      0xff, 0x00, 0x48,    0xff, 0x00, 0x42,    0xff, 0x00, 0x3c,    0xff, 0x00, 0x36
                     db      0xff, 0x00, 0x30,    0xff, 0x00, 0x2a,    0xff, 0x00, 0x24,    0xff, 0x00, 0x1e
-                    db      0xff, 0x00, 0x18,    0x00, 0x00, 0x00,    0x00, 0x00, 0x00,    0x00, 0x00, 0x00
+                    db      0xff, 0x00, 0x18,    0xff, 0x00, 0x12,    0x00, 0x00, 0x00,    0xff, 0xff, 0xff

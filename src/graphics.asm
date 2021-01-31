@@ -317,14 +317,14 @@ draw_cursor:        push    bp                          ; Function prologue
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; DATA
 ;;;;;;;;;;;;;;;;;;;;;;;
-cursorShape:        db      254,   0,   0,   0,   0,
-.r2:                db      254, 254,   0,   0,   0,
-                    db      254, 255, 254,   0,   0,
-                    db      254, 255, 255, 254,   0,
-                    db      254, 255, 255, 254, 254,
-                    db      254, 254, 254,   0,   0,
-                    db      254,   0, 254, 254,   0,
-                    db        0,   0, 254, 254,   0,
+cursorShape:        db      255,   0,   0,   0,   0,
+.r2:                db      255, 255,   0,   0,   0,
+                    db      255, 255, 255,   0,   0,
+                    db      255, 255, 255, 255,   0,
+                    db      255, 255, 255, 255, 255,
+                    db      255, 255, 255,   0,   0,
+                    db      255,   0, 255, 255,   0,
+                    db        0,   0, 255, 255,   0,
 
 CURSOR_WIDTH        equ     (.r2 - cursorShape)
 CURSOR_HEIGHT       equ     ($ - cursorShape) / CURSOR_WIDTH
