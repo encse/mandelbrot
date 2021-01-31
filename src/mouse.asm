@@ -499,8 +499,8 @@ cursorShape:        db      254,   0,   0,   0,   0,
                     db      254,   0, 254, 254,   0,
                     db        0,   0, 254, 254,   0,
 
-CURSOR_WIDTH        equ (.r2 - cursorShape)
-CURSOR_HEIGHT       equ ($ - cursorShape) / CURSOR_WIDTH
+CURSOR_WIDTH        equ     (.r2 - cursorShape)
+CURSOR_HEIGHT       equ     ($ - cursorShape) / CURSOR_WIDTH
 
 areaUnderCursor:
 times CURSOR_HEIGHT * CURSOR_WIDTH db 0

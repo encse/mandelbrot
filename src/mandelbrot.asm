@@ -1,4 +1,4 @@
- mandelbrot_module: mov     ax, 13h                 ; Turn on graphics mode (320x200)
+                    mov     ax, 13h                 ; Turn on graphics mode (320x200)
                     int     10h
 
                     call    init_palette
@@ -111,7 +111,6 @@ draw_mandelbrot:    push    sp
 
                     finit
 
-                    mov     [screen_ptr], word 0
                     mov     [x], word 0
                     mov     [y], word 0
                     xor     ax, ax
@@ -218,7 +217,6 @@ draw_mandelbrot:    push    sp
 .iloopend:          mov     cx, [x]
                     mov     dx, [y]
                 
-                    mov     di, [screen_ptr]
                     mov     ax, [i]
                 
                     cmp     ax, MAX_ITER
@@ -229,8 +227,6 @@ draw_mandelbrot:    push    sp
                     push    dx
                     push    ax
                     call    set_pixel
-                    inc     di
-                    mov     [screen_ptr], di
 
 .nextx:             inc     cx
                     mov     [x], cx
@@ -312,8 +308,6 @@ world_height        dq      2.0
 
 zoom                dq      2.0
 unzoom              dq      0.5
-
-screen_ptr          dw      0x0000
 
 MAX_ITER            equ     253
 
