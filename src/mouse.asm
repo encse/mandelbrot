@@ -8,7 +8,7 @@ VIDEO_MODE:         equ     0x13
 VGA:                equ     0xa000
 
 ; Function: set_pixel
-;           Set the color of (x,y) to the given color in a mouse aware way.
+;           Set the color of (x,y) to the given color in a mouse-aware way.
 ;
 ; Inputs:   SP+4   = color
 ;           SP+6   = y
@@ -288,41 +288,101 @@ mouse_callback:     push    bp                          ; Function prologue
 mouse_callback_dummy: 
                     retf                                ; This routine was reached via FAR CALL. Need a FAR RET
 
+; Function: hide_cursor
+;           Restores the area that was covered by the mouse
 
-hide_cursor:        pusha
-                    push    es
+hide_cursor:        push    bp                          ; Function prologue
+                    mov     bp, sp
+                    sub     sp, 8
+                    pusha
+
+                    push    es                  ; set es
                     push    VGA
                     pop     es
+
+                    mov     ax, [mouseX]
+                    mov     [bp - 2], ax        ; mouseX + icol
                     mov     ax, [mouseY]
-                    mov     cx, 320
-                    mul     cx
-                    add     ax, [mouseX]
-                    mov     di, ax
-                    mov     si, 0
+                    mov     [bp - 4], ax        ; mouseY + irow
+                    xor     ax, ax
+                    mov     [bp - 6], ax        ; icol
+                    mov     [bp - 8], ax        ; irow
 
-                    mov     ax, 0
-                    mov     bx, 0
+.loop:              ; check that the destination is within screen limits
+                    mov     ax, [bp - 2]
+                    cmp     ax, 0
+                    jl      .afterDraw
+                    cmp     ax, 319
+                    jge     .afterDraw
 
-.loop:              mov     cl, byte [areaUnderCursor + si]
+                    mov     ax, [bp - 4]
+                   
+                    cmp     ax, 0
+                    jl      .afterDraw
+                    cmp     ax, 199
+                    jge     .afterDraw
+
+                    ; we are good to draw, let's compute si and di
+                    mov     bx, 320
+                    mul     bx
+                    add     ax, [bp - 2]
+                    mov     di, ax              ; target
+
+                    mov     ax, [bp - 8]
+                    mov     bx, CURSOR_WIDTH
+                    mul     bx
+                    add     ax, [bp - 6]
+                    mov     si, ax              ; src
+
+                    ; get color and draw
+                    mov     cl,  byte [areaUnderCursor + si]
                     mov     byte [es:di], cl
 
-.afterDraw:         inc     si
-                    inc     di
-                    inc     bx
-                    cmp     bx, CURSOR_WIDTH
-                    jl      .loop
-                    xor     bx, bx
+.afterDraw:         ; increment icol
+                    mov     ax, [bp - 6]
+                    inc     ax
+                    cmp     ax, CURSOR_WIDTH
+                    jge     .nextRow
+                    
+                    ;  set icol and mouse + icol
+                    mov     [bp - 6], ax
+                    mov     ax, [bp - 2]
+                    inc     ax
+                    mov     [bp - 2], ax
 
-                    add     di, 320 - CURSOR_WIDTH
+                    jmp     .loop
+
+.nextRow:           ; reset icol and mouse + icol
+                    xor     ax, ax      
+                    mov     [bp - 6], ax
+                    mov     ax, [mouseX]
+                    mov     [bp - 2], ax
+
+                    ; increment irow
+                    mov     ax, [bp - 8]
                     inc     ax
                     cmp     ax, CURSOR_HEIGHT
-                    jl      .loop
+                    jge     .endLoop
 
-.ret:               pop     es
+                    ;  set irow and mouse + irow
+                    mov     [bp - 8], ax
+                    mov     ax, [bp - 4]
+                    inc     ax
+                    mov     [bp - 4], ax
+                    jmp     .loop
+
+.endLoop:           pop     es
                     popa
+                
+                    mov     sp, bp
+                    pop     bp
                     ret
 
 
+; Function: draw_cursor
+;           Draws the mouse cursor to the screen saving the area that 
+;           is under the mouse so that we can restore it later when the
+;           cursor moves or disappears.
 draw_cursor:        pusha
                     push    es
                     push    VGA
@@ -361,6 +421,10 @@ draw_cursor:        pusha
                     popa
                     ret
 
+
+;;;;;;;;;;;;;;;;;;;;;;;
+; DATA
+;;;;;;;;;;;;;;;;;;;;;;;
 
 mouseX:             dw      0              ; Current mouse X coordinate
 mouseY:             dw      0              ; Current mouse Y coordinate
