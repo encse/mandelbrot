@@ -26,9 +26,10 @@ mandelbrot:
         call    setPalette
 
         call    mouseStart
+
     .loop:
         call    drawMandelbrot
-    .waitClick:
+    
     .waitMouseDown:
         hlt
         mov     al, [byButtonStatus]
@@ -41,7 +42,7 @@ mandelbrot:
         cmp     bl, 0
         jnz     .waitMouseUp
 
-        cmp     al, 1                   ; left click
+        cmp     al, 1                       ; left click
         jne    .l1
 
         push    dword [qwZoom + 4]
@@ -52,8 +53,8 @@ mandelbrot:
         jmp     .loop
 
     .l1:
-        cmp     al, 2                   ; right click
-        jne    .waitClick
+        cmp     al, 2                       ; right click
+        jne    .waitMouseDown
 
         push    dword [qwUnzoom + 4]
         push    dword [qwUnzoom]
@@ -79,7 +80,7 @@ handleZoom:
 
         finit
 
-        ; worldX =  worldX +  (worldWidth * mouse_x / width) - (worldWidth / zoom / 2)
+        ; worldX =  worldX + (worldWidth * mouse_x / width) - (worldWidth / zoom / 2)
         fld     qword [qwWorldX]
         fld     qword [qwScreenWidth]
         fild    word [var_wX]
@@ -128,7 +129,7 @@ handleZoom:
         fstp    st0
         fstp    st0
 
-        ; worldHeight = worldHeight / 10
+        ; worldHeight = worldHeight / zoom
         fld     qword [var_qwZoom]
         fld     qword [qwWorldHeight]
         fdiv    st1
@@ -238,7 +239,8 @@ drawMandelbrot:
         fld     qword [var_qwTmp]
         fstp    qword [var_qwZ1]
 
-        ; if (z1 * z1 + z2 * z2 >= 4) break .iloopend;
+        ; if (z1 * z1 + z2 * z2 >= 4) 
+        ;   break
         fld     qword [var_qwZ2]
         fmul    st0
         fld     qword [var_qwZ1]
@@ -263,9 +265,9 @@ drawMandelbrot:
         jl      .forI
 
     .endForI:
-        push    word [var_wX]          ; x
-        push    word [var_wY]          ; y
-        push    ax                     ; color
+        push    word [var_wX]               ; x
+        push    word [var_wY]               ; y
+        push    ax                          ; color
         call    setPixel
 
     .nextX:
@@ -277,15 +279,15 @@ drawMandelbrot:
         ; while (x < 320)
         cmp     ax, 320
         jl      .forX
-
     .endForX:
+
     .nextY:
         ; y++
         mov     ax, [var_wY]
         inc     ax
         mov     [var_wY], ax
 
-        ; while (x < 200)
+        ; while (y < 200)
         cmp     ax, 200
         jl      .forY
     .endForY:

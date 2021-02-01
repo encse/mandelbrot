@@ -1,15 +1,16 @@
-[bits 16]
-[org 0x7c00]
-
+BOOT_START:         equ     0x7c00
 MAIN_START:         equ     0x7e00
 SECTOR_COUNT:       equ     8192 / 512 - 1
+
+[bits 16]
+[org BOOT_START]
 
 bootStart:
         xor     ax, ax
         mov     ds, ax
         mov     es, ax
         mov     ss, ax              ; Set stack pointer just below bootloader
-        mov     sp, 0x7c00
+        mov     sp, BOOT_START
 
         jmp     0x0000:.setCs       ; FAR JMP to ensure set CS to 0
     .setCs:
@@ -17,7 +18,7 @@ bootStart:
         ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH=02h:_Read_Sectors_From_Drive
         mov     bx, MAIN_START      ; es:bx contains the buffer address
         mov     dh, 0x00            ; head number
-                                    ; dl contains the drive number (set by bios)
+                                    ; dl contains the drive number (set by BIOS)
         mov     ah, 0x02            ; 2 for reading
         mov     al, SECTOR_COUNT
         mov     ch, 0x00            ; cylinder
