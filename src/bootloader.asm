@@ -43,14 +43,17 @@ bootStart:
 ;;           di points to string
 ;; Returns:  None
 ;; Locals:   None
-
 printString:
         pusha
-        mov     ah, 0x0e
+        ; https://en.wikipedia.org/wiki/INT_10H
+        mov     ah, 0x0e                    ; teletype output
     .loop:
-        mov     al, [di]    ; load what `bx` points to
+        mov     al, [di]                    ; character to print
+
+        ; until [di] != 0
         cmp     byte [di], 0
         je      .ret
+
         int     0x10
         inc     di
         jmp     .loop
