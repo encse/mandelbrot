@@ -1,39 +1,40 @@
 [bits 16]
 [org 0x7c00]
 
-bootStart:          xor     ax, ax
-                    mov     ds, ax
-                    mov     es, ax
-                    mov     ss, ax              ; Set stack pointer just below bootloader
-                    mov     sp, 0x7c00
-
-                    jmp     0x0000:.setCs       ; FAR JMP to ensure set CS to 0
-.setCs:
-
-                    ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH=02h:_Read_Sectors_From_Drive
 MAIN_START:         equ     0x7e00
 SECTOR_COUNT:       equ     8192 / 512 - 1
-START_SECTOR:       equ     2
 
-                    mov     bx, MAIN_START      ; es:bx contains the buffer address
-                    mov     dh, 0x00            ; head number
-                                                ; dl contains the drive number (set by bios)
-                    mov     ah, 0x02            ; 2 for reading
-                    mov     al, SECTOR_COUNT
-                    mov     ch, 0x00            ; cylinder
-                    mov     cl, START_SECTOR
-                    int     0x13
+bootStart:
+        xor     ax, ax
+        mov     ds, ax
+        mov     es, ax
+        mov     ss, ax              ; Set stack pointer just below bootloader
+        mov     sp, 0x7c00
 
-                    jc      .diskReadError
+        jmp     0x0000:.setCs       ; FAR JMP to ensure set CS to 0
+    .setCs:
 
-                    cmp     al, SECTOR_COUNT
-                    jne     .diskReadError
+        ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH=02h:_Read_Sectors_From_Drive
+        mov     bx, MAIN_START      ; es:bx contains the buffer address
+        mov     dh, 0x00            ; head number
+                                    ; dl contains the drive number (set by bios)
+        mov     ah, 0x02            ; 2 for reading
+        mov     al, SECTOR_COUNT
+        mov     ch, 0x00            ; cylinder
+        mov     cl, 0x02            ; start sector
+        int     0x13
 
-                    jmp     MAIN_START
+        jc      .diskReadError
 
-.diskReadError:     mov     bx, stDiskReadError
-                    call    printString
-                    call    terminate
+        cmp     al, SECTOR_COUNT
+        jne     .diskReadError
+
+        jmp     MAIN_START
+
+    .diskReadError:
+        mov     bx, stDiskReadError
+        call    printString
+        call    terminate
 
 
 ;; Function: printString
@@ -42,27 +43,31 @@ START_SECTOR:       equ     2
 ;; Returns:  None
 ;; Locals:   None
 
-printString:        pusha
-.loop:              mov     al, [bx]    ; load what `bx` points to
-                    cmp     al, 0
-                    je      .ret
-                    push    bx          ; save bx
-                    mov     ah, 0x0e    ; load this every time through the loop
-                                        ; you don't know if `int` preserves it
-                    int     0x10
-                    pop     bx          ; restore bx
-                    inc     bx
-                    jmp     .loop
+printString:
+        pusha
+    .loop:
+        mov     al, [bx]    ; load what `bx` points to
+        cmp     al, 0
+        je      .ret
+        push    bx          ; save bx
+        mov     ah, 0x0e    ; load this every time through the loop
+                            ; you don't know if `int` preserves it
+        int     0x10
+        pop     bx          ; restore bx
+        inc     bx
+        jmp     .loop
 
-.ret:               popa
-                    ret
+    .ret:
+        popa
+        ret
 
 ;; Function: terminate
 ;; Inputs:   None
 ;; Returns:  Never
 ;; Locals:   None
 
-terminate:          jmp     $
+terminate:
+        jmp     $
 
 ;;
 ;; DATA
