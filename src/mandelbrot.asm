@@ -1,70 +1,71 @@
-;                                 ▄█▌            
-;                                ╫████           
-;                              ┌ ,███▌           
-;                        ██▄▄█████████████▄▄ ▄▄  
-;                       ┌▄████████████████████▀  
-;                      ████████████████████████  
-;                    ,██████████████████████████▀
-;         ██████▄▄   ███████████████████████████W
-;     . ███████████ ╫███████████████████████████¬
-;    ▄▄▄████████████╫█████████████████████████▀  
-;    ▀▀▀███████████████████████████████████████  
-;       ╠██████████ ╟███████████████████████████ 
-;         █▀████▀▀   ███████████████████████████M
-;                    `██████████████████████████▄
-;                      ████████████████████████  
-;                       ╙▀████████████████████▄  
-;                        ██▀▀█████████████▀▀ ▀▀  
-;                              └ `███▌           
-;                                ╫████           
-;                                 ╙█▌            
+;;                                 ▄█▌            
+;;                                ╫████           
+;;                              ┌ ,███▌           
+;;                        ██▄▄█████████████▄▄ ▄▄  
+;;                       ┌▄████████████████████▀  
+;;                      ████████████████████████  
+;;                    ,██████████████████████████▀
+;;         ██████▄▄   ███████████████████████████W
+;;     . ███████████ ╫███████████████████████████¬
+;;    ▄▄▄████████████╫█████████████████████████▀  
+;;    ▀▀▀███████████████████████████████████████  
+;;       ╠██████████ ╟███████████████████████████ 
+;;         █▀████▀▀   ███████████████████████████M
+;;                    `██████████████████████████▄
+;;                      ████████████████████████  
+;;                       ╙▀████████████████████▄  
+;;                        ██▀▀█████████████▀▀ ▀▀  
+;;                              └ `███▌           
+;;                                ╫████           
+;;                                 ╙█▌            
 
 mandelbrot:         call    initGraphics
 
-                    push    palette
+                    push    rgbyPalette
                     call    setPalette
 
                     call    mouseStart
 .loop:              call    drawMandelbrot
 .waitClick:
 .waitMouseDown:     hlt
-                    mov     al, [buttonStatus]
+                    mov     al, [byButtonStatus]
                     cmp     al, 0
                     jz      .waitMouseDown
 
 .waitMouseUp:       hlt
-                    mov     bl, [buttonStatus]
+                    mov     bl, [byButtonStatus]
                     cmp     bl, 0
                     jnz     .waitMouseUp
 
                     cmp     al, 1                   ; left click
                     jne    .l1
 
-                    push    dword [zoom + 4]
-                    push    dword [zoom]
-                    push    word  [mouseY]
-                    push    word  [mouseX]
+                    push    dword [qwZoom + 4]
+                    push    dword [qwZoom]
+                    push    word  [wMouseY]
+                    push    word  [wMouseX]
                     call    handleZoom
                     jmp     .loop
 
 .l1:                cmp     al, 2                   ; right click
                     jne    .waitClick
 
-                    push    dword [unzoom + 4]
-                    push    dword [unzoom]
-                    push    word  [mouseY]
-                    push    word  [mouseX]
+                    push    dword [qwUnzoom + 4]
+                    push    dword [qwUnzoom]
+                    push    word  [wMouseY]
+                    push    word  [wMouseX]
                     call    handleZoom
                     jmp     .loop
 
 
-; Function: handleZoom
-;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor
-; Inputs:   SP+4   = x
-;           SP+6   = y
-;           SP+8   = zoom
-; Returns:  None
-; Clobbers: None
+;; Function: handleZoom
+;;           change the world x, y, width and height values based on a mouse click at x,y and zoom factor
+;; Inputs:
+%define var_wX         bp + 4  
+%define var_wY         bp + 6
+%define var_qwZoom     bp + 8
+;; Returns:  None
+;; Locals:   None
 
 handleZoom:         push    sp
                     mov     bp, sp
@@ -72,20 +73,20 @@ handleZoom:         push    sp
                     finit
 
                     ; worldX =  worldX +  (worldWidth * mouse_x / width) - (worldWidth / zoom / 2)
-                    fld     qword [worldX]
-                    fld     qword [width]
-                    fild    word [bp + 4]
-                    fld     qword [worldWidth]
+                    fld     qword [qwWorldX]
+                    fld     qword [qwScreenWidth]
+                    fild    word [var_wX]
+                    fld     qword [qwWorldWidth]
                     fmul    st1
                     fdiv    st2
                     fadd    st3
-                    fld     qword [bp + 8]
-                    fld     qword [const2]
+                    fld     qword [var_qwZoom]
+                    fld     qword [qwConst2]
                     fmulp   st1
-                    fld     qword [worldWidth]
+                    fld     qword [qwWorldWidth]
                     fdiv    st1
                     fsubr   st2
-                    fstp    qword [worldX]
+                    fstp    qword [qwWorldX]
                     fstp    st0
                     fstp    st0
                     fstp    st0
@@ -93,27 +94,27 @@ handleZoom:         push    sp
                     fstp    st0
 
                     ; ; ; worldWidth = worldWidth / zoom
-                    fld     qword [bp + 8]
-                    fld     qword [worldWidth]
+                    fld     qword [var_qwZoom]
+                    fld     qword [qwWorldWidth]
                     fdiv    st1
-                    fstp    qword [worldWidth]
+                    fstp    qword [qwWorldWidth]
                     fstp    st0
 
                     ; ; worldY =  worldY +  (worldHeight * mouse_y / height) - (worldHeight / zoom / 2)
-                    fld     qword [worldY]
-                    fld     qword [height]
-                    fild    word [bp + 6]
-                    fld     qword [worldHeight]
+                    fld     qword [qwWorldY]
+                    fld     qword [qwScreenHeight]
+                    fild    word [var_wY]
+                    fld     qword [qwWorldHeight]
                     fmul    st1
                     fdiv    st2
                     fadd    st3
-                    fld     qword [bp + 8]
-                    fld     qword [const2]
+                    fld     qword [var_qwZoom]
+                    fld     qword [qwConst2]
                     fmulp   st1
-                    fld     qword [worldHeight]
+                    fld     qword [qwWorldHeight]
                     fdiv    st1
                     fsubr   st2
-                    fstp    qword [worldY]
+                    fstp    qword [qwWorldY]
                     fstp    st0
                     fstp    st0
                     fstp    st0
@@ -121,191 +122,184 @@ handleZoom:         push    sp
                     fstp    st0
 
                     ; worldHeight = worldHeight / 10
-                    fld     qword [bp + 8]
-                    fld     qword [worldHeight]
+                    fld     qword [var_qwZoom]
+                    fld     qword [qwWorldHeight]
                     fdiv    st1
-                    fstp    qword [worldHeight]
+                    fstp    qword [qwWorldHeight]
                     fstp    st0
 
                     pop     sp
                     retn    8
 
 
-; Function: drawMandelbrot
-;
-; Inputs:   None
-; Returns:  None
-; Clobbers: None
+;; Function: drawMandelbrot
+;;
+;; Inputs:   None
+;; Returns:  None
+;; Locals:
+%define var_wX        bp - 2
+%define var_wY        bp - 4
+%define var_wI        bp - 6
+%define var_qwC1      bp - 14
+%define var_qwC2      bp - 22
+%define var_qwZ1      bp - 30
+%define var_qwZ2      bp - 38
+%define var_qwTmp     bp - 46
+%define var_qwTmp2    bp - 54
 
-drawMandelbrot:     push    sp
+drawMandelbrot:     push    bp
                     mov     bp, sp
-
+                    sub     sp, 54
                     finit
 
-                    mov     [x], word 0
-                    mov     [y], word 0
+                    mov     [var_wX], word 0
+                    mov     [var_wY], word 0
                     xor     ax, ax
                     mov     ds, ax
 
-.yloop:             mov     cx, [y]
-                    cmp     cx, 200
-                    je      .yloopend
-
+.forY:              ; x = 0
                     xor     ax, ax
-                    mov     [x], ax
-
+                    mov     [var_wX], ax
+                    ; c1 = 0
                     fldz
-                    fstp    qword [c1]
+                    fstp    qword [var_qwC1]
 
-.xloop:             mov     cx, [x]
-                    cmp     cx, 320
-                    je .xloopend
-
+.forX:              ; z1 = z2 = 0
                     fldz
-                    fst     qword [z1]
-                    fstp    qword [z2]
+                    fst     qword [var_qwZ1]
+                    fstp    qword [var_qwZ2]
 
-                    ; $c1 = $worldX + worldWidth / width * x;
-                    fld     qword [worldX]
-                    fild    word [x]
-                    fld     qword [width]
-                    fld     qword [worldWidth]
+                    ; c1 = worldX + worldWidth / screenWidth * x
+                    fld     qword [qwWorldX]
+                    fild    word [var_wX]
+                    fld     qword [qwScreenWidth]
+                    fld     qword [qwWorldWidth]
                     fdiv    st1
                     fmul    st2
                     fadd    st3
-                    fstp    qword [c1]
+                    fstp    qword [var_qwC1]
                     fstp    st0
                     fstp    st0
                     fstp    st0
 
-                    ; $c2 = $min_y + ($max_y - $min_y) / $height * $y;
-                    fld     qword [worldY]
-                    fild    word [y]
-                    fld     qword [height]
-                    fld     qword [worldHeight]
+                    ; c2 = worldY + worldHeight / screenHeight* y
+                    fld     qword [qwWorldY]
+                    fild    word [var_wY]
+                    fld     qword [qwScreenHeight]
+                    fld     qword [qwWorldHeight]
                     fdiv    st1
                     fmul    st2
                     fadd    st3
-                    fstp    qword [c2]
+                    fstp    qword [var_qwC2]
                     fstp    st0
                     fstp    st0
                     fstp    st0
 
                     xor     ax, ax
-                    mov     [i], ax
+                    mov     [var_wI], ax
 
-.iloop:             mov     cx, [i]
-                    cmp     cx, MAX_ITER
-                    je      .iloopend
-
-                    ; tmp = z1 * z1 - z2 * z2 + c1
-                    fld     qword [c1]
-                    fld     qword [z2]
+.forI:              ; tmp = z1 * z1 - z2 * z2 + c1
+                    fld     qword [var_qwC1]
+                    fld     qword [var_qwZ2]
                     fmul    st0
-                    fld     qword [z1]
+                    fld     qword [var_qwZ1]
                     fmul    st0
                     fsub    st1
                     fadd    st2
-                    fstp    qword [tmp]
+                    fstp    qword [var_qwTmp]
                     fstp    st0
                     fstp    st0
 
                     ; z2 = 2 * z1 * z2 + c2
-                    fld     qword [c2]
-                    fld     qword [z2]
-                    fld     qword [z1]
-                    fld     qword [const2]
+                    fld     qword [var_qwC2]
+                    fld     qword [var_qwZ2]
+                    fld     qword [var_qwZ1]
+                    fld     qword [qwConst2]
                     fmul    st1
                     fmul    st2
                     fadd    st3
-                    fstp    qword [z2]
+                    fstp    qword [var_qwZ2]
                     fstp    st0
                     fstp    st0
                     fstp    st0
 
-                    fld     qword [tmp]
-                    fstp    qword [z1]
+                    ; z1 = tmp
+                    fld     qword [var_qwTmp]
+                    fstp    qword [var_qwZ1]
 
-                    ; if (z1 * z1 + z2 * z2 >= 4) break
-                    fld     qword [z2]
+                    ; if (z1 * z1 + z2 * z2 >= 4) break .iloopend;
+                    fld     qword [var_qwZ2]
                     fmul    st0
-                    fld     qword [z1]
+                    fld     qword [var_qwZ1]
                     fmul    st0
                     fadd
-                    fst     qword [tmp2]
-                    fld     qword [const4]
+                    fst     qword [var_qwTmp2]
+                    fld     qword [qwConst4]
                     fcomi   st1
                     fstp    st0
                     fstp    st0
                     fstp    st0
+                    jbe     .endForI
 
-                    jbe     .iloopend
+ .nextI:            ; i++
+                    mov     ax, word [var_wI]
+                    inc     ax
+                    mov     [var_wI], ax
 
- .nexti:            inc     cx
-                    mov     [i], cx
-                    jmp     .iloop
-
-.iloopend:          mov     cx, [x]
-                    mov     dx, [y]
-                
-                    mov     ax, [i]
-                
+                    ; while (i < MAX_ITER)
                     cmp     ax, MAX_ITER
-                    jl      .j1
-                    mov     ax, MAX_ITER         ; the last 2 items of the palette are used by the mouse
+                    jl      .forI
 
-.j1:                push    cx
-                    push    dx
-                    push    ax
+.endForI:           push    word [var_wX]          ; x
+                    push    word [var_wY]          ; y
+                    push    ax                     ; color
                     call    setPixel
 
-.nextx:             inc     cx
-                    mov     [x], cx
-                    jmp     .xloop
-
-.xloopend:
-.nexty:             mov     ax, [y]
+.nextX:             ; x++
+                    mov     ax, [var_wX]
                     inc     ax
-                    mov     [y], ax
+                    mov     [var_wX], ax
 
-                    jmp     .yloop
+                    ; while (x < 320)
+                    cmp     ax, 320
+                    jl      .forX
 
-.yloopend:          pop     sp
+.endForX:
+.nextY:             ; y++
+                    mov     ax, [var_wY]
+                    inc     ax
+                    mov     [var_wY], ax
+
+                    ; while (x < 200)
+                    cmp     ax, 200
+                    jl      .forY
+.endForY:
+                    mov     sp, bp
+                    pop     bp
                     ret
 
-;;;;;;;;;;;;;;;;;;;;;;;
-; DATA
-;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; DATA
+;; 
 MAX_ITER:           equ     254
-
-x:                  dw      0
-y:                  dw      0
-i:                  dw      0
         
-c1:                 dq      0.0
-c2:                 dq      0.0
-z1:                 dq      0.0
-z2:                 dq      0.0
-tmp:                dq      0.0
-tmp2:               dq      0.0
+qwConst1:           dq      1.0
+qwConst2:           dq      2.0
+qwConst4:           dq      4.0
+qwLog2_10_inv:      dq      0.30102999566
         
-const1:             dq      1.0
-const2:             dq      2.0
-const4:             dq      4.0
-log2_10_inv:        dq      0.30102999566
-        
-width:              dq      320.0
-height:             dq      200.0
+qwScreenWidth:      dq      320.0
+qwScreenHeight:     dq      200.0
 
-worldX:             dq      -2.0
-worldY:             dq      -1.0
-worldWidth:         dq      3.2
-worldHeight:        dq      2.0
+qwWorldX:           dq      -2.0
+qwWorldY:           dq      -1.0
+qwWorldWidth:       dq      3.2
+qwWorldHeight:      dq      2.0
 
-zoom:               dq      2.0
-unzoom:             dq      0.5
+qwZoom:             dq      2.0
+qwUnzoom:           dq      0.5
 
-palette:            db      0xff, 0x00, 0x00,    0xff, 0x06, 0x00,    0xff, 0x0c, 0x00,    0xff, 0x12, 0x00
+rgbyPalette:        db      0xff, 0x00, 0x00,    0xff, 0x06, 0x00,    0xff, 0x0c, 0x00,    0xff, 0x12, 0x00
                     db      0xff, 0x18, 0x00,    0xff, 0x1e, 0x00,    0xff, 0x24, 0x00,    0xff, 0x2a, 0x00
                     db      0xff, 0x30, 0x00,    0xff, 0x36, 0x00,    0xff, 0x3c, 0x00,    0xff, 0x42, 0x00
                     db      0xff, 0x48, 0x00,    0xff, 0x4e, 0x00,    0xff, 0x54, 0x00,    0xff, 0x5a, 0x00

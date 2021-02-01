@@ -1,21 +1,21 @@
-; https://stackoverflow.com/questions/54280828/making-a-mouse-handler-in-x86-assembly
+;; https://stackoverflow.com/questions/54280828/making-a-mouse-handler-in-x86-assembly
 
-; Function: mouseStart
-;
-; Inputs:   None
-; Returns:  None
-; Clobbers: AX
+;; Function: mouseStart
+;;
+;; Inputs:   None
+;; Returns:  None
+;; Clobbers: AX
 mouseStart:         call    mouseInitialize
                     call    mouseEnable                 ; Enable the mouse
                     ret
 
 
-; Function: mouseInitialize
-;           Initialize the mouse if present
-;
-; Inputs:   None
-; Returns:  CF = 1 if error, CF=0 success
-; Clobbers: AX
+;; Function: mouseInitialize
+;;           Initialize the mouse if present
+;;
+;; Inputs:   None
+;; Returns:  CF = 1 if error, CF=0 success
+;; Clobbers: AX
 mouseInitialize:    push    es
                     push    bx
 
@@ -49,12 +49,12 @@ mouseInitialize:    push    es
                     pop     es
                     ret
 
-; Function: mouseEnable
-;           Enable the mouse
-;
-; Inputs:   None
-; Returns:  None
-; Clobbers: AX
+;; Function: mouseEnable
+;;           Enable the mouse
+;;
+;; Inputs:   None
+;; Returns:  None
+;; Clobbers: AX
 mouseEnable:        push    es
                     push    bx
 
@@ -75,12 +75,12 @@ mouseEnable:        push    es
                     ret
 
 
-; Function: mouseDisable
-;           Disable the mouse
-;
-; Inputs:   None
-; Returns:  None
-; Clobbers: AX
+;; Function: mouseDisable
+;;           Disable the mouse
+;;
+;; Inputs:   None
+;; Returns:  None
+;; Clobbers: AX
 mouseDisable:       push    es
                     push    bx
 
@@ -96,18 +96,22 @@ mouseDisable:       push    es
                     pop     es
                     ret
 
-; Function: mouseCallback (FAR)
-;           called by the interrupt handler to process a mouse data packet
-;           All registers that are modified must be saved and restored
-;           Since we are polling manually this handler does nothing
-;
-; Inputs:   SP+4  = Unused (0)
-;           SP+6  = MovementY
-;           SP+8  = MovementX
-;           SP+10 = Mouse Status
-;
-; Returns:  None
-; Clobbers: None
+;; Function: mouseCallback (FAR)
+;;           called by the interrupt handler to process a mouse data packet
+;;           All registers that are modified must be saved and restored
+;;           Since we are polling manually this handler does nothing
+;;
+;; Inputs:   SP+4  = Unused (0)
+;;           SP+6  = MovementY
+;;           SP+8  = MovementX
+;;           SP+10 = Mouse Status
+;;
+;; Returns:  None
+;; Clobbers: None
+%define var_wStatus     bp + 12
+%define var_wDx         bp + 10
+%define var_wDy         bp + 8
+
 mouseCallback:      push    bp                          ; Function prologue
                     mov     bp, sp
                     push    ds                          ; Save registers we modify
@@ -123,27 +127,27 @@ mouseCallback:      push    bp                          ; Function prologue
 
                     call    hideCursor
 
-                    mov     al, [bp + 12]
+                    mov     al, [var_wStatus]
                     mov     bl, al                      ; BX = copy of status byte
                     mov     cl, 3                       ; Shift signY (bit 5) left 3 bits
                     shl     al, cl                      ; CF = signY
                                                         ; Sign bit of AL = SignX
                     sbb     dh, dh                      ; CH = SignY value set in all bits
                     cbw                                 ; AH = SignX value set in all bits
-                    mov     dl, [bp + 8]                ; CX = movementY
-                    mov     al, [bp + 10]               ; AX = movementX
+                    mov     dl, [var_wDy]                 ; CX = movementY
+                    mov     al, [var_wDx]                 ; AX = movementX
 
                     ; new mouse X_coord = X_Coord + movementX
                     ; new mouse Y_coord = Y_Coord + (-movementY)
                     neg     dx
-                    mov     cx, [mouseY]
+                    mov     cx, [wMouseY]
                     add     dx, cx                      ; DX = new mouse Y_coord
-                    mov     cx, [mouseX]
+                    mov     cx, [wMouseX]
                     add     ax, cx                      ; AX = new mouse X_coord
 
                     ; Status
                     and     bl, 3                       ; Keep two lowest bits (left and rigth button clicked)
-                    mov     [buttonStatus], bl          ; Update the current status with the new bits
+                    mov     [byButtonStatus], bl        ; Update the current status with the new bits
                     cmp     ax, 0
                     jge     .j1
                     mov     ax, 0
@@ -160,8 +164,8 @@ mouseCallback:      push    bp                          ; Function prologue
                     jle     .j4
                     mov     dx, 199
 
-.j4:                mov     [mouseX], ax                ; Update current virtual mouseX coord
-                    mov     [mouseY], dx                ; Update current virtual mouseY coord
+.j4:                mov     [wMouseX], ax               ; Update current virtual mouseX coord
+                    mov     [wMouseY], dx                ; Update current virtual mouseY coord
 
                     call    drawCursor
 
@@ -177,15 +181,14 @@ mouseCallback:      push    bp                          ; Function prologue
 
 mouseCallbackDummy: retf                                ; This routine was reached via FAR CALL. Need a FAR RET
 
-;;;;;;;;;;;;;;;;;;;;;;;
-; DATA
-;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; DATA
+;;
 HW_EQUIP_PS2:       equ     4          ; PS/2 mouse installed?
 MOUSE_PKT_BYTES:    equ     3          ; Number of bytes in mouse packet
 MOUSE_RESOLUTION:   equ     2          ; Mouse resolution 8 counts/mm
 
-mouseX:             dw      0          ; Current mouse X coordinate
-mouseY:             dw      0          ; Current mouse Y coordinate
-buttonStatus:       db      0          ; 1: left, 2: right button clicked, 3: both
-noMouseMsg:         db      `Error setting up & initializing mouse\r\n`, 0
+wMouseX:            dw      0          ; Current mouse X coordinate
+wMouseY:            dw      0          ; Current mouse Y coordinate
+byButtonStatus:     db      0          ; 1: left, 2: right button clicked, 3: both
 
