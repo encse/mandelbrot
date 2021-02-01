@@ -33,31 +33,27 @@ bootStart:
         jmp     MAIN_START
 
     .diskReadError:
-        mov     bx, stDiskReadError
+        mov     di, stDiskReadError
         call    printString
         call    terminate
 
 
 ;; Function: printString
 ;; Inputs:
-;;           bx points to string
+;;           di points to string
 ;; Returns:  None
 ;; Locals:   None
 
 printString:
         pusha
+        mov     ah, 0x0e
     .loop:
-        mov     al, [bx]    ; load what `bx` points to
-        cmp     al, 0
+        mov     al, [di]    ; load what `bx` points to
+        cmp     byte [di], 0
         je      .ret
-        push    bx          ; save bx
-        mov     ah, 0x0e    ; load this every time through the loop
-                            ; you don't know if `int` preserves it
         int     0x10
-        pop     bx          ; restore bx
-        inc     bx
+        inc     di
         jmp     .loop
-
     .ret:
         popa
         ret

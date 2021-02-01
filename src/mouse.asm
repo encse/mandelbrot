@@ -5,10 +5,9 @@
 ;;
 ;; Inputs:   None
 ;; Returns:  None
-;; Clobbers: AX
 mouseStart:
         call    mouseInitialize
-        call    mouseEnable                 ; Enable the mouse
+        call    mouseEnable
         ret
 
 
@@ -61,10 +60,10 @@ mouseInitialize:
 ;;
 ;; Inputs:   None
 ;; Returns:  None
-;; Clobbers: AX
 mouseEnable:
         push    es
         push    bx
+        push    ax
 
         call    mouseDisable                ; Disable mouse before enabling
 
@@ -78,6 +77,7 @@ mouseEnable:
         mov     bh, 1                       ; BH = Enable = 1
         int     0x15                        ; Call BIOS to disable mouse
 
+        pop     ax
         pop     bx
         pop     es
         ret
@@ -88,10 +88,10 @@ mouseEnable:
 ;;
 ;; Inputs:   None
 ;; Returns:  None
-;; Clobbers: AX
 mouseDisable:
         push    es
         push    bx
+        push    ax
 
         mov     ax, 0xC200                  ; Enable/Disable mouse
         xor     bx, bx                      ; BH = Disable = 0
@@ -101,6 +101,7 @@ mouseDisable:
         mov     ax, 0xC207                  ; Clear callback function (ES:BX=0:0)
         int     0x15                        ; Call BIOS to set callback
 
+        pop     ax
         pop     bx
         pop     es
         ret
@@ -117,7 +118,6 @@ mouseDisable:
 ;;           SP+10 = Mouse Status
 ;;
 ;; Returns:  None
-;; Clobbers: None
 %define var_wStatus     bp + 12
 %define var_wDx         bp + 10
 %define var_wDy         bp + 8
