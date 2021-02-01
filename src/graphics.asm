@@ -19,26 +19,22 @@ setPalette:
         mov     bp, sp
         pusha
 
-        ;; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html
-        ;; INT 0x10 0x1010: Set One DAC Color Register
-        ;; Expects: AX    0x1010
-        ;;          BX    color register to set (0-255)
-        ;;          DH    red value   (0-255)
-        ;;          CH    green value (0-255)
-        ;;          CL    blue value  (0-255)
         mov     ax, [var_rgbyPalette]
         mov     di, ax
-        xor     bx, bx
+        
+        ; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html  
+        xor     bx, bx                      ; palette index
 
     .loop:
-        mov     dh,  [di]
+        mov     dh,  [di]                   ; red
         inc     di
-        mov     ch,  [di]
+        mov     ch,  [di]                   ; green
         inc     di
-        mov     cl,  [di]
+        mov     cl,  [di]                   ; blue
         inc     di
-        mov     ax, 0x1010
-        int     0x10
+        
+        mov     ax, 0x1010                  ; Set One DAC Color Register
+        int     0x10                    
 
         inc     bx
         cmp     bx, 256

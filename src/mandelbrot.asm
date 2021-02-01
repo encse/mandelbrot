@@ -73,7 +73,6 @@ mandelbrot:
 %define var_qwZoom     bp + 8
 ;; Returns:  None
 ;; Locals:   None
-
 handleZoom:
         push    sp
         mov     bp, sp
@@ -154,7 +153,6 @@ handleZoom:
 %define var_qwZ2      bp - 38
 %define var_qwTmp     bp - 46
 %define var_qwTmp2    bp - 54
-
 drawMandelbrot:
         push    bp
         mov     bp, sp
