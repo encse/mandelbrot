@@ -198,11 +198,11 @@ mouseCallbackDummy:
 ;;
 ;; DATA
 ;;
-HW_EQUIP_PS2:       equ     4          ; PS/2 mouse installed?
-MOUSE_PKT_BYTES:    equ     3          ; Number of bytes in mouse packet
-MOUSE_RESOLUTION:   equ     2          ; Mouse resolution 8 counts/mm
+HW_EQUIP_PS2:       equ     4               ; PS/2 mouse installed?
+MOUSE_PKT_BYTES:    equ     3               ; Number of bytes in mouse packet
+MOUSE_RESOLUTION:   equ     2               ; Mouse resolution 8 counts/mm
 
-wMouseX:            dw      0          ; Current mouse X coordinate
-wMouseY:            dw      0          ; Current mouse Y coordinate
-byButtonStatus:     db      0          ; 1: left, 2: right button clicked, 3: both
+wMouseX:            dw      0               ; Current mouse X coordinate
+wMouseY:            dw      0               ; Current mouse Y coordinate
+byButtonStatus:     db      0               ; 1: left, 2: right button clicked, 3: both
 

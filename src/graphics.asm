@@ -62,7 +62,6 @@ setPixel:
         push    bp
         mov     bp, sp
         push    es
-        push    di
         pusha
 
         ; check if x and y are valid coordinates
@@ -126,7 +125,6 @@ setPixel:
 
     .ret:
         popa
-        pop     di
         pop     es
         pop     bp
         retn    6
@@ -146,8 +144,8 @@ hideCursor:
         mov     bp, sp
         sub     sp, 8
         pusha
-
         push    es                  ; set es
+
         push    VGA
         pop     es
 
