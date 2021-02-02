@@ -1,79 +1,114 @@
-BOOT_START:         equ     0x7c00
-MAIN_START:         equ     0x7e00
-SECTOR_COUNT:       equ     8192 / 512 - 1
+; Boot sector load address
+%assign BootLoader.Begin 0x7c00
+
+; Sector size in bytes
+%assign BootLoader.SectorSize 512
+
+; Words in 16 bit x86 are 2 bytes
+%assign BootLoader.WordSize 2
+
+; Sectors used by main program
+%assign BootLoader.MainSectorCount (Main.CodeSize / BootLoader.SectorSize - 1)
 
 [bits 16]
-[org BOOT_START]
+[org BootLoader.Begin]
 
-bootStart:
-        xor     ax, ax
-        mov     ds, ax
-        mov     es, ax
-        mov     ss, ax              ; Set stack pointer just below bootloader
-        mov     sp, BOOT_START
+BootLoader:
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
 
-        jmp     0x0000:.setCs       ; FAR JMP to ensure set CS to 0
-    .setCs:
+    ; Set stack pointer just below bootloader
+    mov ss, ax
+    mov sp, BootLoader.Begin
 
-        ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH=02h:_Read_Sectors_From_Drive
-        mov     bx, MAIN_START      ; es:bx contains the buffer address
-        mov     dh, 0x00            ; head number
-                                    ; dl contains the drive number (set by BIOS)
-        mov     ah, 0x02            ; 2 for reading
-        mov     al, SECTOR_COUNT
-        mov     ch, 0x00            ; cylinder
-        mov     cl, 0x02            ; start sector
-        int     0x13
+    ; FAR JMP to ensure set CS to 0
+    jmp 0x0000:.setCs       
+.setCs:
 
-        jc      .diskReadError
+    ; Read & start main program
 
-        cmp     al, SECTOR_COUNT
-        jne     .diskReadError
+    ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH=02h:_Read_Sectors_From_Drive
+    ; 2 for reading
+    mov ah, 0x02
+    
+    ; drive head number, dl contains the drive number (set by BIOS)
+    mov dh, 0x00
 
-        jmp     MAIN_START
+     ; cylinder of drive
+    mov ch, 0x00
 
-    .diskReadError:
-        mov     di, stDiskReadError
-        call    printString
-        call    terminate
+    ; number of sectors to read
+    mov al, BootLoader.MainSectorCount
+   
+    ; start sector to read from
+    mov cl, 0x02
+
+    ; es:bx contains the target address
+    mov bx, Main.Start
+
+    int 0x13
+
+    jc .diskReadError
+
+    cmp al, BootLoader.MainSectorCount
+    jne .diskReadError
+
+    jmp Main.Start
+
+.diskReadError:
+    mov di, BootLoader.stDiskReadError
+    call printString
+    call terminate
 
 
 ;; Function: printString
+;;           Print a string to the terminal
 ;; Inputs:
 ;;           di points to string
-;; Returns:  None
-;; Locals:   None
 printString:
-        pusha
-        ; https://en.wikipedia.org/wiki/INT_10H
-        mov     ah, 0x0e                    ; teletype output
-    .loop:
-        mov     al, [di]                    ; character to print
+    pusha
+    ; https://en.wikipedia.org/wiki/INT_10H
+    ; teletype output
+    mov ah, 0x0e
+.loop:
+    ; character to print
+    mov al, [di]
 
-        ; until [di] != 0
-        cmp     byte [di], 0
-        je      .ret
+    ; until [di] != 0
+    cmp byte [di], 0
+    je .ret
 
-        int     0x10
-        inc     di
-        jmp     .loop
-    .ret:
-        popa
-        ret
+    int 0x10
+
+    ; next character
+    inc di
+
+    jmp .loop
+
+.ret:
+    popa
+    ret
 
 ;; Function: terminate
 ;; Inputs:   None
 ;; Returns:  Never
 ;; Locals:   None
-
 terminate:
-        jmp     $
+    jmp $
 
 ;;
 ;; DATA
 ;;
+BootLoader.stDiskReadError:
+    db `Disk read error\r\n`, 0
 
-stDiskReadError:    db      `Disk read error\r\n`, 0
+%assign BootLoader.CodeSize $ - $$
 
-times 510 - ($-$$)  db      0           ; Fill the rest of sector with 0
-                    dw      0xAA55      ; Add boot signature at the end of bootloader
+; Pad to size of boot sector, minus the size of a word for the boot sector
+; magic value. If the code is too big to fit in a boot sector, the `times`
+; directive uses a negative value, causing a build error.
+times (BootLoader.SectorSize - BootLoader.WordSize) - BootLoader.CodeSize db 0
+
+; Add boot signature at the end of bootloader
+dw 0xAA55

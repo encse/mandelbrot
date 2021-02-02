@@ -1,371 +1,367 @@
-;; Function: initGraphics
-;; Inputs:   None
-;; Returns:  None
-;; Locals:   None
-initGraphics:
-        mov     ax, VIDEO_MODE      ; Turn on graphics mode (320x200)
-        int     0x10
-        ret
+; Graphics memory start address
+%assign Graphics.Vga 0xa000
+
+; 320 x 200, 256 color mode
+%assign Graphics.VideoMode 0x13
+
+;; Function: init
+Graphics.init:
+    ; Turn on graphics mode 
+    mov ax, Graphics.VideoMode
+    int 0x10
+    ret
 
 
 ;; Function: setPalette
-;; Inputs:
-;;      near pointer to palette with 256 * 3 bytes of R, G, B colors
-%define var_rgbyPalette     bp + 4
-;; Returns:  None
-;; Locals:   None
-setPalette:
-        push    bp
-        mov     bp, sp
-        pusha
+Graphics.setPalette:
+    ; near pointer to palette with 256 * 3 bytes of R, G, B colors
+    %define rgbyPalette     bp + 4
+    push bp
+    mov bp, sp
 
-        mov     ax, [var_rgbyPalette]
-        mov     di, ax
-        
-        ; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html  
-        xor     bx, bx                      ; palette index
+    pusha
 
-    .loop:
-        mov     dh,  [di]                   ; red
-        inc     di
-        mov     ch,  [di]                   ; green
-        inc     di
-        mov     cl,  [di]                   ; blue
-        inc     di
-        
-        mov     ax, 0x1010                  ; Set One DAC Color Register
-        int     0x10                    
+    mov ax, [rgbyPalette]
+    mov di, ax
+    
+    ; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html  
+    xor bx, bx                      ; palette index
 
-        inc     bx
-        cmp     bx, 256
-        jl      .loop
+.loop:
+    mov dh, [di]                   ; red
+    inc di
+    mov ch, [di]                   ; green
+    inc di
+    mov cl, [di]                   ; blue
+    inc di
+    
+    mov ax, 0x1010                  ; Set One DAC Color Register
+    int 0x10                    
 
-        popa
-        mov     sp, bp
-        pop     bp
-        ret     2
+    inc bx
+    cmp bx, 256
+    jl .loop
+
+    popa
+    mov sp, bp
+    pop bp
+    ret 2
 
 
 ;; Function: setPixel
 ;;           Set the color of (x,y) to the given color in a mouse-aware way.
-;; Inputs:
-%define var_wX              bp + 8
-%define var_wY              bp + 6
-%define var_byColor         bp + 4
-;; Returns:  None
-;; Locals:   None
-setPixel:
-        push    bp
-        mov     bp, sp
-        push    es
-        pusha
+Graphics.setPixel:
+    %define wX              bp + 8
+    %define wY              bp + 6
+    %define byColor         bp + 4
 
-        ; check if x and y are valid coordinates
-        mov     bx, word [var_wX]
-        cmp     bx, 320
-        jge     .ret
-        cmp     bx, 0
-        jl     .ret
+    push bp
+    mov bp, sp
+    push es
+    pusha
 
-        mov     ax, word [var_wY]
-        cmp     ax, 200
-        jge     .ret
-        cmp     ax, 0
-        jl     .ret
+    ; check if x and y are valid coordinates
+    mov bx, word [wX]
+    cmp bx, 320
+    jge .ret
+    cmp bx, 0
+    jl .ret
 
-        mov     cx, 320
-        mul     cx
-        add     ax, bx
+    mov ax, word [wY]
+    cmp ax, 200
+    jge .ret
+    cmp ax, 0
+    jl .ret
 
-        mov     di, ax
-        mov     cx, [var_byColor]
+    mov cx, 320
+    mul cx
+    add ax, bx
 
+    mov di, ax
+    mov cx, [byColor]
 
-        ; check if x and y is in the mouse rectangle, if yes, need to update the underlying area
-        mov     ax, word [var_wY]
-        mov     dx, [wMouseY]
-        sub     ax, dx
-        mov     bx, ax
+    ; check if x and y is in the mouse rectangle,
+    ; if yes, need to update the underlying area
+    mov ax, word [wY]
+    mov dx, [Mouse.wMouseY]
+    sub ax, dx
+    mov bx, ax
 
-        mov     ax, word [var_wX]
-        mov     dx, [wMouseX]
-        sub     ax, dx
+    mov ax, word [wX]
+    mov dx, [Mouse.wMouseX]
+    sub ax, dx
 
-        cmp     bx, 0
-        jl      .draw
-        cmp     bx, CURSOR_HEIGHT
-        jge     .draw
+    cmp bx, 0
+    jl .draw
+    cmp bx, Graphics.cursorHeight
+    jge .draw
 
-        cmp     ax, 0
-        jl      .draw
-        cmp     ax, CURSOR_WIDTH
-        jge     .draw
+    cmp ax, 0
+    jl .draw
+    cmp ax, Graphics.cursorWidth
+    jge .draw
 
-        xchg    ax, bx
-        mov     dx, CURSOR_WIDTH
-        mul     dx
-        add     ax, bx
-        mov     si, ax
+    xchg ax, bx
+    mov dx, Graphics.cursorWidth
+    mul dx
+    add ax, bx
+    mov si, ax
 
-        mov     byte [rgbyAreaUnderCursor + si], cl
+    mov byte [Graphics.rgbyAreaUnderCursor + si], cl
 
-        ; check if mouse is transparent at the given index, don't draw if not transparent
-        mov     al, [rgbyCursorShape + si]
-        cmp     al, 0
-        jnz     .ret
+    ; check if mouse is transparent at the given index, don't draw if not transparent
+    mov al, [Graphics.rgbyCursorShape + si]
+    cmp al, 0
+    jnz .ret
 
-    .draw:
-        push    VGA
-        pop     es
-        mov     byte [es:di], cl
+.draw:
+    push Graphics.Vga
+    pop es
+    mov byte [es:di], cl
 
-    .ret:
-        popa
-        pop     es
-        pop     bp
-        retn    6
+.ret:
+    popa
+    pop es
+    pop bp
+    retn 6
 
 
 ;; Function: hideCursor
 ;;           Restores the area that was covered by the mouse
-;; Inputs:   None
-;; Returns:  None
-;; Locals:
-%define var_wIcolScreen     bp - 2
-%define var_wIrowScreen     bp - 4
-%define var_wIcol           bp - 6
-%define var_wIrow           bp - 8
-hideCursor:
-        push    bp
-        mov     bp, sp
-        sub     sp, 8
-        pusha
-        push    es                  ; set es
+Graphics.hideCursor:
+    push bp
+    mov bp, sp
 
-        push    VGA
-        pop     es
+    %define wIcolScreen     bp - 2
+    %define wIrowScreen     bp - 4
+    %define wIcol           bp - 6
+    %define wIrow           bp - 8
+    sub sp, 8
 
-        mov     ax, [wMouseX]
-        mov     [var_wIcolScreen], ax
-        mov     ax, [wMouseY]
-        mov     [var_wIrowScreen], ax
-        xor     ax, ax
-        mov     [var_wIcol], ax
-        mov     [var_wIrow], ax
+    pusha
+    push es
 
-    .loop:
-        ; check that the destination is within screen limits
-        mov     ax, [var_wIcolScreen]
-        cmp     ax, 0
-        jl      .afterDraw
-        cmp     ax, 320
-        jge     .afterDraw
+    ; es = Vga
+    push Graphics.Vga
+    pop es
 
-        mov     ax, [var_wIrowScreen]
+    mov ax, [Mouse.wMouseX]
+    mov [wIcolScreen], ax
+    mov ax, [Mouse.wMouseY]
+    mov [wIrowScreen], ax
+    xor ax, ax
+    mov [wIcol], ax
+    mov [wIrow], ax
 
-        cmp     ax, 0
-        jl      .afterDraw
-        cmp     ax, 200
-        jge     .afterDraw
+.loop:
+    ; check that the destination is within screen limits
+    mov ax, [wIcolScreen]
+    cmp ax, 0
+    jl .afterDraw
+    cmp ax, 320
+    jge .afterDraw
 
-        ; we are good to draw, let's compute si and di
-        mov     bx, 320
-        mul     bx
-        add     ax, [var_wIcolScreen]
-        mov     di, ax              ; target
+    mov ax, [wIrowScreen]
 
-        mov     ax, [var_wIrow]
-        mov     bx, CURSOR_WIDTH
-        mul     bx
-        add     ax, [var_wIcol]
-        mov     si, ax              ; src
+    cmp ax, 0
+    jl .afterDraw
+    cmp ax, 200
+    jge .afterDraw
 
-        ; get color and draw
-        mov     cl,  byte [rgbyAreaUnderCursor + si]
-        mov     byte [es:di], cl
+    ; we are good to draw, let's compute si and di
+    mov bx, 320
+    mul bx
+    add ax, [wIcolScreen]
+    mov di, ax              ; target
 
-    .afterDraw:
-        ; increment varIcol
-        mov     ax, [var_wIcol]
-        inc     ax
-        cmp     ax, CURSOR_WIDTH
-        jge     .nextRow
+    mov ax, [wIrow]
+    mov bx, Graphics.cursorWidth
+    mul bx
+    add ax, [wIcol]
+    mov si, ax              ; src
 
-        ;  set varIcol and mouse + varIcol
-        mov     [var_wIcol], ax
-        mov     ax, [var_wIcolScreen]
-        inc     ax
-        mov     [var_wIcolScreen], ax
+    ; get color and draw
+    mov cl, byte [Graphics.rgbyAreaUnderCursor + si]
+    mov byte [es:di], cl
 
-        jmp     .loop
+.afterDraw:
+    ; increment varIcol
+    mov ax, [wIcol]
+    inc ax
+    cmp ax, Graphics.cursorWidth
+    jge .nextRow
 
-    .nextRow:
-        ; reset varIcol and mouse + varIcol
-        xor     ax, ax
-        mov     [var_wIcol], ax
-        mov     ax, [wMouseX]
-        mov     [var_wIcolScreen], ax
+    ;  set varIcol and mouse + varIcol
+    mov [wIcol], ax
+    mov ax, [wIcolScreen]
+    inc ax
+    mov [wIcolScreen], ax
 
-        ; increment varIrow
-        mov     ax, [var_wIrow]
-        inc     ax
-        cmp     ax, CURSOR_HEIGHT
-        jge     .endLoop
+    jmp .loop
 
-        ;  set varIrow and screenRrow
-        mov     [var_wIrow], ax
-        mov     ax, [var_wIrowScreen]
-        inc     ax
-        mov     [var_wIrowScreen], ax
-        jmp     .loop
+.nextRow:
+    ; reset varIcol and mouse + varIcol
+    xor ax, ax
+    mov [wIcol], ax
+    mov ax, [Mouse.wMouseX]
+    mov [wIcolScreen], ax
 
-    .endLoop:
-        pop     es
-        popa
-        mov     sp, bp
-        pop     bp
-        ret
+    ; increment varIrow
+    mov ax, [wIrow]
+    inc ax
+    cmp ax, Graphics.cursorHeight
+    jge .endLoop
+
+    ;  set varIrow and screenRrow
+    mov [wIrow], ax
+    mov ax, [wIrowScreen]
+    inc ax
+    mov [wIrowScreen], ax
+    jmp .loop
+
+.endLoop:
+    pop es
+    popa
+    mov sp, bp
+    pop bp
+    ret
 
 
 ;; Function: drawCursor
 ;;           Draws the mouse cursor to the screen saving the area that
 ;;           is under the mouse so that we can restore it later when the
 ;;           cursor moves or disappears.
-;; Inputs:   None
-;; Returns:  None
-;; Locals:
-%define var_wIcolScreen     bp - 2
-%define var_wIrowScreen     bp - 4
-%define var_wIcol           bp - 6
-%define var_wIrow           bp - 8
-drawCursor:
-        push    bp
-        mov     bp, sp
-        sub     sp, 8
-        pusha
+Graphics.drawCursor:
+    push bp
+    mov bp, sp
 
-        ; es = VGA
-        push    es
-        push    VGA
-        pop     es
+    %define wIcolScreen     bp - 2
+    %define wIrowScreen     bp - 4
+    %define wIcol           bp - 6
+    %define wIrow           bp - 8
+    sub sp, 8
+    pusha
 
-        ; var_wIcolScreen = wMouseX
-        mov     ax, [wMouseX]
-        mov     [var_wIcolScreen], ax
+    ; es = VGA
+    push es
+    push Graphics.Vga
+    pop es
 
-        ; var_wIrowScreen = wMouseY
-        mov     ax, [wMouseY]
-        mov     [var_wIrowScreen], ax
+    ; wIcolScreen = Mouse.wMouseX
+    mov ax, [Mouse.wMouseX]
+    mov [wIcolScreen], ax
 
-        xor     ax, ax
-        ; var_wIcol = 0
-        mov     [var_wIcol], ax
-        ; var_wIrow = 0
-        mov     [var_wIrow], ax
+    ; wIrowScreen = Mouse.wMouseY
+    mov ax, [Mouse.wMouseY]
+    mov [wIrowScreen], ax
 
-    .loop:
-        ; check that the destination is within screen limits
-        ; 0 <= var_wIcolScreen < 320 ?
-        mov     ax, [var_wIcolScreen]
-        cmp     ax, 0
-        jl      .afterDraw
-        cmp     ax, 320
-        jge     .afterDraw
+    xor ax, ax
+    ; wIcol = 0
+    mov [wIcol], ax
+    ; wIrow = 0
+    mov [wIrow], ax
 
-            ; 0 <= var_wIrowScreen < 320 ?
-        mov     ax, [var_wIrowScreen]
-        cmp     ax, 0
-        jl      .afterDraw
-        cmp     ax, 200
-        jge     .afterDraw
+.loop:
+    ; check that the destination is within screen limits
+    ; 0 <= wIcolScreen < 320 ?
+    mov ax, [wIcolScreen]
+    cmp ax, 0
+    jl .afterDraw
+    cmp ax, 320
+    jge .afterDraw
 
-        ; we are good to draw, let's compute si and di
-        mov     bx, 320
-        mul     bx
-        add     ax, [var_wIcolScreen]
-        mov     di, ax              ; target
+        ; 0 <= wIrowScreen < 320 ?
+    mov ax, [wIrowScreen]
+    cmp ax, 0
+    jl .afterDraw
+    cmp ax, 200
+    jge .afterDraw
 
-        mov     ax, [var_wIrow]
-        mov     bx, CURSOR_WIDTH
-        mul     bx
-        add     ax, [var_wIcol]
-        mov     si, ax              ; src
+    ; we are good to draw, let's compute si and di
+    mov bx, 320
+    mul bx
+    add ax, [wIcolScreen]
+    mov di, ax              ; target
 
-        ; save original screen color
-        mov     cl, byte [es:di]
-        mov     byte [rgbyAreaUnderCursor + si], cl
+    mov ax, [wIrow]
+    mov bx, Graphics.cursorWidth
+    mul bx
+    add ax, [wIcol]
+    mov si, ax              ; src
 
-        ; get color from cursor shape
-        mov     cl, byte [rgbyCursorShape + si]
+    ; save original screen color
+    mov cl, byte [es:di]
+    mov byte [Graphics.rgbyAreaUnderCursor + si], cl
 
-        ; skip if transparent
-        cmp     cl, 0
-        jz      .afterDraw
+    ; get color from cursor shape
+    mov cl, byte [Graphics.rgbyCursorShape + si]
 
-        ; draw to screen
-        mov     byte [es:di], cl
+    ; skip if transparent
+    cmp cl, 0
+    jz .afterDraw
 
-    .afterDraw:
-        ; increment var_wIcol
-        mov     ax, [var_wIcol]
-        inc     ax
-        cmp     ax, CURSOR_WIDTH
-        jge     .nextRow
+    ; draw to screen
+    mov byte [es:di], cl
 
-        ;  set var_wIcol and var_wIcolScreen
-        mov     [var_wIcol], ax
-        mov     ax, [var_wIcolScreen]
-        inc     ax
-        mov     [var_wIcolScreen], ax
+.afterDraw:
+    ; increment wIcol
+    mov ax, [wIcol]
+    inc ax
+    cmp ax, Graphics.cursorWidth
+    jge .nextRow
 
-        jmp     .loop
+    ;  set wIcol and wIcolScreen
+    mov [wIcol], ax
+    mov ax, [wIcolScreen]
+    inc ax
+    mov [wIcolScreen], ax
 
-    .nextRow:
-        ; reset var_wIcol and var_wIcolScreen
-        xor     ax, ax
-        mov     [var_wIcol], ax
-        mov     ax, [wMouseX]
-        mov     [var_wIcolScreen], ax
+    jmp .loop
 
-        ; increment var_wIrow
-        mov     ax, [var_wIrow]
-        inc     ax
-        cmp     ax, CURSOR_HEIGHT
-        jge     .endLoop
+.nextRow:
+    ; reset wIcol and wIcolScreen
+    xor ax, ax
+    mov [wIcol], ax
+    mov ax, [Mouse.wMouseX]
+    mov [wIcolScreen], ax
 
-        ;  set var_wIrow and var_wIrowScreen
-        mov     [var_wIrow], ax
-        mov     ax, [var_wIrowScreen]
-        inc     ax
-        mov     [var_wIrowScreen], ax
-        jmp     .loop
+    ; increment wIrow
+    mov ax, [wIrow]
+    inc ax
+    cmp ax, Graphics.cursorHeight
+    jge .endLoop
 
-    .endLoop:
-        pop     es
-        popa
-        mov     sp, bp
-        pop     bp
-        ret
+    ;  set wIrow and wIrowScreen
+    mov [wIrow], ax
+    mov ax, [wIrowScreen]
+    inc ax
+    mov [wIrowScreen], ax
+    jmp .loop
+
+.endLoop:
+    pop es
+    popa
+    mov sp, bp
+    pop bp
+    ret
 
 
 ;;
 ;; DATA
 ;;
-VGA:                equ     0xa000
-VIDEO_MODE:         equ     0x13
 
-rgbyCursorShape:
-        db      255,   0,   0,   0,   0,
-.r2:    db      255, 255,   0,   0,   0,
-        db      255, 255, 255,   0,   0,
-        db      255, 255, 255, 255,   0,
-        db      255, 255, 255, 255, 255,
-        db      255, 255, 255,   0,   0,
-        db      255,   0, 255, 255,   0,
-        db        0,   0, 255, 255,   0,
+Graphics.rgbyCursorShape:
+    db 255,   0,   0,   0,   0,
+.w: db 255, 255,   0,   0,   0,
+    db 255, 255, 255,   0,   0,
+    db 255, 255, 255, 255,   0,
+    db 255, 255, 255, 255, 255,
+    db 255, 255, 255,   0,   0,
+    db 255,   0, 255, 255,   0,
+    db 0,   0, 255, 255,   0,
 
-CURSOR_WIDTH:       equ     .r2 - rgbyCursorShape
-CURSOR_HEIGHT:      equ     ($ - rgbyCursorShape) / CURSOR_WIDTH
+Graphics.cursorWidth equ .w - Graphics.rgbyCursorShape
+Graphics.cursorHeight equ ($ - Graphics.rgbyCursorShape) / Graphics.cursorWidth
 
-rgbyAreaUnderCursor:
-        times CURSOR_HEIGHT * CURSOR_WIDTH db 0
+Graphics.rgbyAreaUnderCursor:
+    times Graphics.cursorHeight * Graphics.cursorWidth db 0

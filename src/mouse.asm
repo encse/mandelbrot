@@ -1,14 +1,23 @@
 ;; https://stackoverflow.com/questions/54280828/making-a-mouse-handler-in-x86-assembly
 
+;; PS/2 mouse installed?
+%assign Mouse.hwEquipPs2  4 
+
+;; Number of bytes in mouse packet
+%assign Mouse.packetBytes 3
+
+;; Mouse resolution 8 counts/mm
+%assign Mouse.resolution  2
+
 
 ;; Function: mouseStart
 ;;
 ;; Inputs:   None
 ;; Returns:  None
-mouseStart:
-        call    mouseInitialize
-        call    mouseEnable
-        ret
+Mouse.start:
+    call    Mouse.initialize
+    call    Mouse.enable
+    ret
 
 
 ;; Function: mouseInitialize
@@ -17,42 +26,42 @@ mouseStart:
 ;; Inputs:   None
 ;; Returns:  CF = 1 if error, CF=0 success
 ;; Clobbers: AX
-mouseInitialize:
-        push    es
-        push    bx
+Mouse.initialize:
+    push es
+    push bx
 
-        int     0x11                        ; Get equipment list
-        test    ax, HW_EQUIP_PS2            ; Is a PS/2 mouse installed?
-        jz      .no_mouse                   ;     if not print error and end
+    int 0x11                        ; Get equipment list
+    test ax, Mouse.hwEquipPs2            ; Is a PS/2 mouse installed?
+    jz .no_mouse                   ;     if not print error and end
 
-        mov     ax, 0xC205                  ; Initialize mouse
-        mov     bh, MOUSE_PKT_BYTES         ; 3 byte packets
-        int     0x15                        ; Call BIOS to initialize
-        jc      .no_mouse                   ;    If not successful assume no mouse
+    mov ax, 0xC205                  ; Initialize mouse
+    mov bh, Mouse.packetBytes         ; 3 byte packets
+    int 0x15                        ; Call BIOS to initialize
+    jc .no_mouse                   ;    If not successful assume no mouse
 
-        mov     ax, 0xC203                  ; Set resolution
-        mov     bh, MOUSE_RESOLUTION        ; 8 counts / mm
-        int     0x15                        ; Call BIOS to set resolution
-        jc      .no_mouse                   ;    If not successful assume no mouse
+    mov ax, 0xC203                  ; Set resolution
+    mov bh, Mouse.resolution        ; 8 counts / mm
+    int 0x15                        ; Call BIOS to set resolution
+    jc .no_mouse                   ;    If not successful assume no mouse
 
-        push    cs
-        pop     es                          ; ES = segment where code and mouse handler reside
+    push cs
+    pop es                          ; ES = segment where code and mouse handler reside
 
-        mov     bx, mouseCallbackDummy
-        mov     ax, 0xC207                  ; Install a default null handler (ES:BX)
-        int     0x15                        ; Call BIOS to set callback
-        jc      .no_mouse                   ;    If not successful assume no mouse
+    mov bx, Mouse.callbackDummy
+    mov ax, 0xC207                  ; Install a default null handler (ES:BX)
+    int 0x15                        ; Call BIOS to set callback
+    jc .no_mouse                   ;    If not successful assume no mouse
 
-        clc                                 ; CF=0 is success
-        jmp     .finished
+    clc                                 ; CF=0 is success
+    jmp .finished
 
-    .no_mouse:
-        stc                                 ; CF=1 is error
+.no_mouse:
+    stc                                 ; CF=1 is error
 
-    .finished:
-        pop     bx
-        pop     es
-        ret
+.finished:
+    pop bx
+    pop es
+    ret
 
 
 ;; Function: mouseEnable
@@ -60,27 +69,27 @@ mouseInitialize:
 ;;
 ;; Inputs:   None
 ;; Returns:  None
-mouseEnable:
-        push    es
-        push    bx
-        push    ax
+Mouse.enable:
+    push es
+    push bx
+    push ax
 
-        call    mouseDisable                ; Disable mouse before enabling
+    call Mouse.disable                ; Disable mouse before enabling
 
-        push    cs
-        pop     es
-        mov     bx, mouseCallback
-        mov     ax, 0xC207                  ; Set mouse callback function (ES:BX)
-        int     0x15                        ; Call BIOS to set callback
+    push cs
+    pop es
+    mov bx, Mouse.callback
+    mov ax, 0xC207                  ; Set mouse callback function (ES:BX)
+    int 0x15                        ; Call BIOS to set callback
 
-        mov     ax, 0xC200                  ; Enable/Disable mouse
-        mov     bh, 1                       ; BH = Enable = 1
-        int     0x15                        ; Call BIOS to disable mouse
+    mov ax, 0xC200                  ; Enable/Disable mouse
+    mov bh, 1                       ; BH = Enable = 1
+    int 0x15                        ; Call BIOS to disable mouse
 
-        pop     ax
-        pop     bx
-        pop     es
-        ret
+    pop ax
+    pop bx
+    pop es
+    ret
 
 
 ;; Function: mouseDisable
@@ -88,23 +97,23 @@ mouseEnable:
 ;;
 ;; Inputs:   None
 ;; Returns:  None
-mouseDisable:
-        push    es
-        push    bx
-        push    ax
+Mouse.disable:
+    push es
+    push bx
+    push ax
 
-        mov     ax, 0xC200                  ; Enable/Disable mouse
-        xor     bx, bx                      ; BH = Disable = 0
-        int     0x15                        ; Call BIOS to disable mouse
+    mov ax, 0xC200                  ; Enable/Disable mouse
+    xor bx, bx                      ; BH = Disable = 0
+    int 0x15                        ; Call BIOS to disable mouse
 
-        mov     es, bx
-        mov     ax, 0xC207                  ; Clear callback function (ES:BX=0:0)
-        int     0x15                        ; Call BIOS to set callback
+    mov es, bx
+    mov ax, 0xC207                  ; Clear callback function (ES:BX=0:0)
+    int 0x15                        ; Call BIOS to set callback
 
-        pop     ax
-        pop     bx
-        pop     es
-        ret
+    pop ax
+    pop bx
+    pop es
+    ret
 
 
 ;; Function: mouseCallback (FAR)
@@ -116,93 +125,102 @@ mouseDisable:
 ;;           SP+6  = MovementY
 ;;           SP+8  = MovementX
 ;;           SP+10 = Mouse Status
-;;
 ;; Returns:  None
-%define var_wStatus     bp + 12
-%define var_wDx         bp + 10
-%define var_wDy         bp + 8
-mouseCallback:
-        push    bp
-        mov     bp, sp
-        pusha
-        
-        push    ds
-        push    es
 
-        push    cs
-        pop     ds                          ; DS = CS, CS = where our variables are stored
+Mouse.callback:
+    %define wStatus     bp + 12
+    %define wDx         bp + 10
+    %define wDy         bp + 8
 
-        call    hideCursor
+    push bp
+    mov bp, sp
+    pusha
+    
+    push ds
+    push es
 
-        mov     al, [var_wStatus]
-        mov     bl, al                      ; bl = copy of status byte
-        mov     cl, 3                       ; Shift signY (bit 5) left 3 bits
-        shl     al, cl                      ; CF = signY
-                                            ; Sign bit of AL = SignX
-        sbb     dh, dh                      ; dh = SignY value set in all bits
-        cbw                                 ; ah = SignX value set in all bits
-        mov     dl, [var_wDy]               ; dl = movementY
-        mov     al, [var_wDx]               ; al = movementX
+    push cs
+    pop ds                          ; DS = CS, CS = where our variables are stored
 
-        ; new mouse X_coord = X_Coord + movementX
-        ; new mouse Y_coord = Y_Coord + (-movementY)
-        neg     dx
-        mov     cx, [wMouseY]
-        add     dx, cx                      ; dx = new mouse Y_coord
-        mov     cx, [wMouseX]
-        add     ax, cx                      ; ax = new mouse X_coord
+    call Graphics.hideCursor
 
-        ; Status
-        and     bl, 3                       ; Keep two lowest bits (left and rigth button clicked)
-        mov     [byButtonStatus], bl        ; Update the current status with the new bits
-        
-        ; ax = max(0, ax) 
-        cmp     ax, 0
-        jge     .j1
-        mov     ax, 0
+    mov al, [wStatus]
+    mov bl, al                      ; bl = copy of status byte
+    mov cl, 3                       ; Shift signY (bit 5) left 3 bits
+    shl al, cl                      ; CF = signY
+                                    ; Sign bit of AL = SignX
+    sbb dh, dh                      ; dh = SignY value set in all bits
+    cbw                             ; ah = SignX value set in all bits
+    mov dl, [wDy]               ; dl = movementY
+    mov al, [wDx]               ; al = movementX
 
-    .j1:
-        ; ax = min(ax, 319)
-        cmp     ax, 319
-        jle     .j2
-        mov     ax, 319
+    ; new mouse X_coord = X_Coord + movementX
+    ; new mouse Y_coord = Y_Coord + (-movementY)
+    neg dx
+    mov cx, [Mouse.wMouseY]
+    add dx, cx                      ; dx = new mouse Y_coord
+    mov cx, [Mouse.wMouseX]
+    add ax, cx                      ; ax = new mouse X_coord
 
-    .j2:
-        ; dx = max(0, dx) 
-        cmp     dx, 0
-        jge     .j3
-        mov     dx, 0
+    ; Status
+    and bl, 3                       ; Keep two lowest bits (left and rigth button clicked)
+    mov [Mouse.byButtonStatus], bl        ; Update the current status with the new bits
+    
+    ; ax = max(0, ax) 
+    cmp ax, 0
+    jge .j1
+    mov ax, 0
 
-    .j3:
-        ; dx = min(dx, 199)
-        cmp     dx, 199
-        jle     .j4
-        mov     dx, 199
+.j1:
+    ; ax = min(ax, 319)
+    cmp ax, 319
+    jle .j2
+    mov ax, 319
 
-    .j4:
-        mov     [wMouseX], ax               ; Update current virtual mouseX coord
-        mov     [wMouseY], dx               ; Update current virtual mouseY coord
+.j2:
+    ; dx = max(0, dx) 
+    cmp dx, 0
+    jge .j3
+    mov dx, 0
 
-        call    drawCursor
+.j3:
+    ; dx = min(dx, 199)
+    cmp dx, 199
+    jle .j4
+    mov dx, 199
 
-        pop     es
-        pop     ds
-        popa
-        mov     sp, bp
-        pop     bp
+.j4:
+    ; Update current virtual mouseX coord
+    mov [Mouse.wMouseX], ax
+    ; Update current virtual mouseY coord
+    mov [Mouse.wMouseY], dx
+
+    call Graphics.drawCursor
+
+    pop es
+    pop ds
+    popa
+    mov sp, bp
+    pop bp
 
 
-mouseCallbackDummy: 
-        retf                                ; This routine was reached via FAR CALL. Need a FAR RET
+Mouse.callbackDummy: 
+    ; This routine was reached via FAR CALL. Need a FAR RET
+    retf
 
 ;;
 ;; DATA
 ;;
-HW_EQUIP_PS2:       equ     4               ; PS/2 mouse installed?
-MOUSE_PKT_BYTES:    equ     3               ; Number of bytes in mouse packet
-MOUSE_RESOLUTION:   equ     2               ; Mouse resolution 8 counts/mm
 
-wMouseX:            dw      0               ; Current mouse X coordinate
-wMouseY:            dw      0               ; Current mouse Y coordinate
-byButtonStatus:     db      0               ; 1: left, 2: right button clicked, 3: both
+;; Current mouse X coordinate
+Mouse.wMouseX: dw 0
+
+;; Current mouse Y coordinate
+Mouse.wMouseY: dw 0
+
+;; Current button status: 
+;; 1: left pushed
+;; 2: right pushed
+;; 3: both pushed
+Mouse.byButtonStatus: db 0
 
