@@ -11,12 +11,11 @@
 
 ; define a procedure definition called with ip on the stack
 %macro proc 1
-    %push proc
+        %push proc
     %1: 
-    %stacksize large
-    %assign %$localsize 0 
-    %assign %$arg 0
-    %define %$procname %1
+        %stacksize large
+        %assign %$localsize 0 
+        %assign %$arg 0
 %endmacro
 
 ; begin a procedure definition called with cs:ip on the stack
@@ -26,7 +25,6 @@
         %stacksize small
         %assign %$localsize 0 
         %assign %$arg 0
-        %define %$procname %1
 %endmacro
 
 %macro begin 0
