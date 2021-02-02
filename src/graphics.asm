@@ -6,21 +6,19 @@
 
 ;; Function:
 ;;      turn on graphics mode 
-Graphics.init:
+proc Graphics.init
+begin
     mov ax, Graphics.VideoMode
     int 0x10
-    ret
+endproc
 
 ;; Function:
 ;;      set vga palette
 ;; Parameters:
 ;;      * rgbyPalette       near pointer to palette with 256 * 3 bytes of R, G, B colors
-Graphics.setPalette:
-    push bp
-    mov bp, sp
-
-    %define rgbyPalette     bp + 4
-
+proc Graphics.setPalette
+    %arg rgbyPalette:word
+begin
     pusha
 
     mov ax, [rgbyPalette]
@@ -48,9 +46,7 @@ Graphics.setPalette:
 
 .ret:
     popa
-    mov sp, bp
-    pop bp
-    ret 2
+endproc
 
 ;; Function:
 ;;      Set the color of (x,y) to the given color in a mouse-aware way.
@@ -58,14 +54,11 @@ Graphics.setPalette:
 ;;      * wX
 ;;      * wY
 ;;      * byColor
-Graphics.setPixel:
-    push bp
-    mov bp, sp
-
-    %define wX              bp + 8
-    %define wY              bp + 6
-    %define byColor         bp + 4
-
+proc Graphics.setPixel
+    %arg byColor:byte
+    %arg wY:word
+    %arg wX:word
+begin
     push es
     pusha
 
@@ -131,22 +124,17 @@ Graphics.setPixel:
 .ret:
     popa
     pop es
-    pop bp
-    retn 6
+endproc
 
 
 ;; Function:
 ;;      Restores the area that was covered by the mouse
-Graphics.hideCursor:
-    push bp
-    mov bp, sp
-
-    %define wIcolScreen     bp - 2
-    %define wIrowScreen     bp - 4
-    %define wIcol           bp - 6
-    %define wIrow           bp - 8
-    sub sp, 8
-
+proc Graphics.hideCursor
+    %local wIcolScreen:word
+    %local wIrowScreen:word
+    %local wIcol:word
+    %local wIrow:word
+begin
     pusha
     push es
 
@@ -228,24 +216,19 @@ Graphics.hideCursor:
 .endLoop:
     pop es
     popa
-    mov sp, bp
-    pop bp
-    ret
+endproc
 
 
 ;; Function:
 ;;      Draws the mouse cursor to the screen saving the area that
 ;;      is under the mouse so that we can restore it later when the
 ;;      cursor moves or disappears.
-Graphics.drawCursor:
-    push bp
-    mov bp, sp
-
-    %define wIcolScreen     bp - 2
-    %define wIrowScreen     bp - 4
-    %define wIcol           bp - 6
-    %define wIrow           bp - 8
-    sub sp, 8
+proc Graphics.drawCursor
+    %arg wIcolScreen:word
+    %arg wIrowScreen:word
+    %arg wIcol:word
+    %arg wIrow:word
+begin
     pusha
 
     ; es = VGA
@@ -345,9 +328,7 @@ Graphics.drawCursor:
 .endLoop:
     pop es
     popa
-    mov sp, bp
-    pop bp
-    ret
+endproc
 
 Graphics.rgbyCursorShape:
     db 255,   0,   0,   0,   0,

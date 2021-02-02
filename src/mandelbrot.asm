@@ -26,6 +26,7 @@ Mandelbrot.start:
 
     push Mandelbrot.rgbyPalette
     call Graphics.setPalette
+    add sp, 2
 
     call Mouse.start
 
@@ -53,6 +54,7 @@ Mandelbrot.start:
     push word  [Mouse.wMouseY]
     push word  [Mouse.wMouseX]
     call Mandelbrot.handleZoom
+    add sp, 12
     jmp .mainLoop
 
 .l1:
@@ -65,6 +67,7 @@ Mandelbrot.start:
     push word [Mouse.wMouseY]
     push word [Mouse.wMouseX]
     call Mandelbrot.handleZoom
+    add sp, 12
     jmp .mainLoop
 
 ;; Function:
@@ -74,14 +77,11 @@ Mandelbrot.start:
 ;;      * wX
 ;;      * wY
 ;;      * qwZoom
-Mandelbrot.handleZoom:
-    push sp
-    mov bp, sp
-
-    %define wX         bp + 4
-    %define wY         bp + 6
-    %define qwZoom     bp + 8
-
+proc Mandelbrot.handleZoom
+    %arg wX:word
+    %arg wY:word
+    %arg qwZoom:word
+begin
     finit
 
     ; worldX =  worldX + (worldWidth * mouse_x / width) - (worldWidth / zoom / 2)
@@ -140,25 +140,20 @@ Mandelbrot.handleZoom:
     fstp qword [Mandelbrot.qwWorldHeight]
     fstp st0
 
-    pop sp
-    retn 8
+endproc
 
 ;; Function: drawMandelbrot
-Mandelbrot.draw:
-    push bp
-    mov bp, sp
-
-    %define wX        bp - 2
-    %define wY        bp - 4
-    %define wI        bp - 6
-    %define qwC1      bp - 14
-    %define qwC2      bp - 22
-    %define qwZ1      bp - 30
-    %define qwZ2      bp - 38
-    %define qwTmp     bp - 46
-    %define qwTmp2    bp - 54
-    sub sp, 54
-
+proc Mandelbrot.draw
+    %local wX:word
+    %local wY:word
+    %local wI:word
+    %local qwC1:qword
+    %local qwC2:qword
+    %local qwZ1:qword
+    %local qwZ2:qword
+    %local qwTmp:qword
+    %local qwTmp2:qword
+begin
     finit
 
     mov [wX], word 0
@@ -269,6 +264,7 @@ Mandelbrot.draw:
     push word [wY]
     push ax ; color
     call Graphics.setPixel
+    add sp, 6
 
 .nextX:
     ; x++
@@ -291,9 +287,7 @@ Mandelbrot.draw:
     cmp ax, 200
     jl .forY
 .endForY:
-    mov sp, bp
-    pop bp
-    ret
+endproc
 
 Mandelbrot.qwConst1: dq 1.0
 Mandelbrot.qwConst2: dq 2.0

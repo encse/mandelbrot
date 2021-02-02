@@ -11,18 +11,20 @@
 
 ;; Function: 
 ;;      Initialize and enable mouse
-Mouse.start:
+proc Mouse.start
+begin
     call    Mouse.initialize
     jc  .ret
     call    Mouse.enable
 .ret:
-    ret
+endproc
 
 ;; Function:
 ;;      Initialize the mouse if present
 ;; Returns: cf = 1 if error, cf = 0 success
 ;; Clobbers: ax
-Mouse.initialize:
+proc Mouse.initialize
+begin
     push es
     push bx
 
@@ -63,11 +65,12 @@ Mouse.initialize:
 .finished:
     pop bx
     pop es
-    ret
+endproc
 
 ;; Function:
 ;;      Enable the mouse
-Mouse.enable:
+proc Mouse.enable
+begin
     push es
     push bx
     push ax
@@ -91,11 +94,12 @@ Mouse.enable:
     pop ax
     pop bx
     pop es
-    ret
+endproc
 
 ;; Function:
 ;;      Disable the mouse
-Mouse.disable:
+proc Mouse.disable
+begin
     push es
     push bx
     push ax
@@ -114,7 +118,7 @@ Mouse.disable:
     pop ax
     pop bx
     pop es
-    ret
+endproc
 
 ;; Function:
 ;;      called by the interrupt handler to process a mouse data packet
@@ -126,14 +130,12 @@ Mouse.disable:
 ;;      * wDy           movement y
 ;;      * wDx           movement x
 ;;      * byStatus      mouse status byte
-Mouse.callback:
-    push bp
-    mov bp, sp
-
-    %define byStatus    bp + 12
-    %define wDx         bp + 10
-    %define wDy         bp + 8
-
+farproc Mouse.callback
+    %arg wUnused:word
+    %arg wDy:word
+    %arg wDx:word
+    %arg byStatus:byte
+begin
     pusha
     push ds
     push es
@@ -204,12 +206,12 @@ Mouse.callback:
     pop es
     pop ds
     popa
-    mov sp, bp
-    pop bp
+endproc
 
-Mouse.callbackDummy:
-    ; This routine was reached via FAR CALL. Need a FAR RET
-    retf
+farproc Mouse.callbackDummy
+begin
+    ; nop
+endproc
 
 ;; Current mouse X coordinate
 Mouse.wMouseX: dw 0
