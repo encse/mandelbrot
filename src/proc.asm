@@ -41,7 +41,7 @@
         leave
         ret
     %else
-        %error Mismatched `endproc'/`proc'
+        %error Mismatched 'endproc'/'proc'
     %endif
     %pop
 %endmacro
