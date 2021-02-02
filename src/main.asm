@@ -3,7 +3,8 @@
 %assign Main.CodeSize    8192
 %assign Main.LoadAddress 0x7e00
 
-%include "proc.mac"
+%include "proc.asm"
+
 %include "bootloader.asm"
 %include "mandelbrot.asm"
 %include "mouse.asm"
