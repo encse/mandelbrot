@@ -69,13 +69,17 @@ Mandelbrot.start:
 ;; Function: handleZoom
 ;;           change the world x, y, width and height values based on a
 ;;           mouse click at x,y and zoom factor
+;; Parameters:
+;;      * wX
+;;      * wY
+;;      * qwZoom
 Mandelbrot.handleZoom:
+    push sp
+    mov bp, sp
+
     %define wX         bp + 4
     %define wY         bp + 6
     %define qwZoom     bp + 8
-
-    push sp
-    mov bp, sp
 
     finit
 
@@ -143,6 +147,7 @@ Mandelbrot.handleZoom:
 Mandelbrot.draw:
     push bp
     mov bp, sp
+
     %define wX        bp - 2
     %define wY        bp - 4
     %define wI        bp - 6

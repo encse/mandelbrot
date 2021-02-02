@@ -1,7 +1,7 @@
-; Graphics memory start address
+;; Graphics memory start address
 %assign Graphics.Vga 0xa000
 
-; 320 x 200, 256 color mode
+;; 320 x 200, 256 color mode
 %assign Graphics.VideoMode 0x13
 
 ;; Function: init
@@ -13,11 +13,13 @@ Graphics.init:
 
 
 ;; Function: setPalette
+;; Parameters:
+;;      * rgbyPalette       near pointer to palette with 256 * 3 bytes of R, G, B colors
 Graphics.setPalette:
-    ; near pointer to palette with 256 * 3 bytes of R, G, B colors
-    %define rgbyPalette     bp + 4
     push bp
     mov bp, sp
+
+    %define rgbyPalette     bp + 4
 
     pusha
 
@@ -50,13 +52,18 @@ Graphics.setPalette:
 
 ;; Function: setPixel
 ;;           Set the color of (x,y) to the given color in a mouse-aware way.
+;; Parameters:
+;;      * wX            
+;;      * wY            
+;;      * byColor       
 Graphics.setPixel:
+    push bp
+    mov bp, sp
+
     %define wX              bp + 8
     %define wY              bp + 6
     %define byColor         bp + 4
 
-    push bp
-    mov bp, sp
     push es
     pusha
 
