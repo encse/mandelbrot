@@ -4,15 +4,15 @@
 ;; 320 x 200, 256 color mode
 %assign Graphics.VideoMode 0x13
 
-;; Function: init
+;; Function:
+;;      turn on graphics mode 
 Graphics.init:
-    ; Turn on graphics mode 
     mov ax, Graphics.VideoMode
     int 0x10
     ret
 
-
-;; Function: setPalette
+;; Function:
+;;      set vga palette
 ;; Parameters:
 ;;      * rgbyPalette       near pointer to palette with 256 * 3 bytes of R, G, B colors
 Graphics.setPalette:
@@ -26,36 +26,38 @@ Graphics.setPalette:
     mov ax, [rgbyPalette]
     mov di, ax
     
-    ; http://www.techhelpmanual.com/144-int_10h_1010h__set_one_dac_color_register.html  
-    xor bx, bx                      ; palette index
-
+    ; palette index
+    xor bx, bx 
 .loop:
-    mov dh, [di]                   ; red
+    ; red
+    mov dh, [di] 
     inc di
-    mov ch, [di]                   ; green
+    ; green
+    mov ch, [di]
     inc di
-    mov cl, [di]                   ; blue
+    ; blue
+    mov cl, [di]
     inc di
-    
-    mov ax, 0x1010                  ; Set One DAC Color Register
-    int 0x10                    
+    ; set DAC Color Register
+    mov ax, 0x1010
+    int 0x10
 
     inc bx
     cmp bx, 256
     jl .loop
 
+.ret:
     popa
     mov sp, bp
     pop bp
     ret 2
 
-
-;; Function: setPixel
-;;           Set the color of (x,y) to the given color in a mouse-aware way.
+;; Function:
+;;      Set the color of (x,y) to the given color in a mouse-aware way.
 ;; Parameters:
-;;      * wX            
-;;      * wY            
-;;      * byColor       
+;;      * wX
+;;      * wY
+;;      * byColor
 Graphics.setPixel:
     push bp
     mov bp, sp
@@ -133,8 +135,8 @@ Graphics.setPixel:
     retn 6
 
 
-;; Function: hideCursor
-;;           Restores the area that was covered by the mouse
+;; Function:
+;;      Restores the area that was covered by the mouse
 Graphics.hideCursor:
     push bp
     mov bp, sp
@@ -179,26 +181,28 @@ Graphics.hideCursor:
     mov bx, 320
     mul bx
     add ax, [wIcolScreen]
-    mov di, ax              ; target
+    ; di: target
+    mov di, ax
 
     mov ax, [wIrow]
     mov bx, Graphics.cursorWidth
     mul bx
     add ax, [wIcol]
-    mov si, ax              ; src
+    ; si: src
+    mov si, ax 
 
     ; get color and draw
     mov cl, byte [Graphics.rgbyAreaUnderCursor + si]
     mov byte [es:di], cl
 
 .afterDraw:
-    ; increment varIcol
+    ; increment icol
     mov ax, [wIcol]
     inc ax
     cmp ax, Graphics.cursorWidth
     jge .nextRow
 
-    ;  set varIcol and mouse + varIcol
+    ;  set icol and icolScreen
     mov [wIcol], ax
     mov ax, [wIcolScreen]
     inc ax
@@ -207,19 +211,19 @@ Graphics.hideCursor:
     jmp .loop
 
 .nextRow:
-    ; reset varIcol and mouse + varIcol
+    ; reset icol and icolScreen
     xor ax, ax
     mov [wIcol], ax
     mov ax, [Mouse.wMouseX]
     mov [wIcolScreen], ax
 
-    ; increment varIrow
+    ; increment irow
     mov ax, [wIrow]
     inc ax
     cmp ax, Graphics.cursorHeight
     jge .endLoop
 
-    ;  set varIrow and screenRrow
+    ;  set irow and irowScreen
     mov [wIrow], ax
     mov ax, [wIrowScreen]
     inc ax
@@ -234,10 +238,10 @@ Graphics.hideCursor:
     ret
 
 
-;; Function: drawCursor
-;;           Draws the mouse cursor to the screen saving the area that
-;;           is under the mouse so that we can restore it later when the
-;;           cursor moves or disappears.
+;; Function:
+;;      Draws the mouse cursor to the screen saving the area that
+;;      is under the mouse so that we can restore it later when the
+;;      cursor moves or disappears.
 Graphics.drawCursor:
     push bp
     mov bp, sp
@@ -288,13 +292,15 @@ Graphics.drawCursor:
     mov bx, 320
     mul bx
     add ax, [wIcolScreen]
-    mov di, ax              ; target
+    ; di: target
+    mov di, ax
 
     mov ax, [wIrow]
     mov bx, Graphics.cursorWidth
     mul bx
     add ax, [wIcol]
-    mov si, ax              ; src
+    ; si: src
+    mov si, ax
 
     ; save original screen color
     mov cl, byte [es:di]
@@ -352,11 +358,6 @@ Graphics.drawCursor:
     pop bp
     ret
 
-
-;;
-;; DATA
-;;
-
 Graphics.rgbyCursorShape:
     db 255,   0,   0,   0,   0,
 .w: db 255, 255,   0,   0,   0,
@@ -365,7 +366,7 @@ Graphics.rgbyCursorShape:
     db 255, 255, 255, 255, 255,
     db 255, 255, 255,   0,   0,
     db 255,   0, 255, 255,   0,
-    db 0,   0, 255, 255,   0,
+    db   0,   0, 255, 255,   0,
 
 Graphics.cursorWidth equ .w - Graphics.rgbyCursorShape
 Graphics.cursorHeight equ ($ - Graphics.rgbyCursorShape) / Graphics.cursorWidth

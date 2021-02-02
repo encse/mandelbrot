@@ -9,18 +9,19 @@
 ;; Mouse resolution 8 counts/mm
 %assign Mouse.resolution  2
 
-;; Function: Initialize and enable mouse
+;; Function: 
+;;      Initialize and enable mouse
 Mouse.start:
     call    Mouse.initialize
-    ; If not successful assume no mouse
     jc  .ret
     call    Mouse.enable
 .ret
     ret
 
-;; Function: Initialize the mouse if present
-;; Returns:  CF = 1 if error, CF=0 success
-;; Clobbers: AX
+;; Function:
+;;      Initialize the mouse if present
+;; Returns: cf = 1 if error, cf = 0 success
+;; Clobbers: ax
 Mouse.initialize:
     push es
     push bx
@@ -29,21 +30,18 @@ Mouse.initialize:
     int 0x11
     ; Is a PS/2 mouse installed?
     test ax, Mouse.hwEquipPs2
-    ; if not print error and end
     jz .no_mouse
 
     ; Initialize mouse
     mov ax, 0xC205
     mov bh, Mouse.packetBytes
     int 0x15
-    ; If not successful assume no mouse
     jc .no_mouse
 
     ; Set resolution
     mov ax, 0xC203
     mov bh, Mouse.resolution
     int 0x15
-    ; If not successful assume no mouse
     jc .no_mouse
 
     ; Set mouse callback function (ES:BX)
@@ -52,7 +50,6 @@ Mouse.initialize:
     mov bx, Mouse.callbackDummy
     mov ax, 0xC207
     int 0x15
-    ; If not successful assume no mouse
     jc .no_mouse
 
     ; cf = 0 -> success
@@ -68,25 +65,26 @@ Mouse.initialize:
     pop es
     ret
 
-;; Function: Enable the mouse
+;; Function:
+;;      Enable the mouse
 Mouse.enable:
     push es
     push bx
     push ax
 
-    ; Disable mouse before enabling
+    ; disable mouse before enabling
     call Mouse.disable
 
-    ; Set mouse callback function (ES:BX)
+    ; set mouse callback function (ES:BX)
     push cs
     pop es
     mov bx, Mouse.callback
-    mov ax, 0xC207
+    mov ax, 0xc207
     int 0x15
 
-    ; Enable/Disable mouse
-    mov ax, 0xC200
-    ; BH = Enable = 1
+    ; enable / disable mouse
+    mov ax, 0xc200
+    ; bh = 1 to enable
     mov bh, 1 
     int 0x15
 
@@ -95,21 +93,22 @@ Mouse.enable:
     pop es
     ret
 
-;; Function: Disable the mouse
+;; Function:
+;;      Disable the mouse
 Mouse.disable:
     push es
     push bx
     push ax
 
-    ; Enable/Disable mouse
-    mov ax, 0xC200
-    ; BH = Disable = 0
+    ; enable / disable mouse
+    mov ax, 0xc200
+    ; bh = 0 to disable
     xor bx, bx 
     int 0x15
 
-    ; Clear callback function (ES:BX=0:0)
+    ; clear callback function (es:bx = 0:0)
     mov es, bx
-    mov ax, 0xC207
+    mov ax, 0xc207
     int 0x15
 
     pop ax
@@ -117,10 +116,10 @@ Mouse.disable:
     pop es
     ret
 
-;; Function: mouseCallback (FAR)
-;;           called by the interrupt handler to process a mouse data packet
-;;           All registers that are modified must be saved and restored
-;;           Since we are polling manually this handler does nothing
+;; Function:
+;;      called by the interrupt handler to process a mouse data packet
+;;      All registers that are modified must be saved and restored
+;;      Since we are polling manually this handler does nothing
 ;;
 ;; Parameters:
 ;;      * wUnused       0
@@ -139,7 +138,7 @@ Mouse.callback:
     push ds
     push es
 
-    ; DS = CS, CS = where our variables are stored
+    ; ds = cs, cs = where our variables are stored
     push cs
     pop ds
 
@@ -150,7 +149,7 @@ Mouse.callback:
     mov bl, al
     ; Shift signY (bit 5) left 3 bits
     mov cl, 3
-    ; CF = signY; Sign bit of AL = SignX
+    ; cf = signY; Sign bit of al = SignX
     shl al, cl
 
     ; dh = SignY value set in all bits
@@ -233,4 +232,3 @@ Mouse.wMouseY: dw 0
 ;; 2: right pushed
 ;; 3: both pushed
 Mouse.byButtonStatus: db 0
-

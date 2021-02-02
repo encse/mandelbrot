@@ -44,7 +44,8 @@ Mandelbrot.start:
     cmp bl, 0
     jnz .waitMouseUp
 
-    cmp al, 1                       ; left click
+    ; left click?
+    cmp al, 1
     jne .l1
 
     push dword [Mandelbrot.qwZoom + 4]
@@ -55,7 +56,8 @@ Mandelbrot.start:
     jmp .loop
 
 .l1:
-    cmp al, 2                       ; right click
+    ; right click?
+    cmp al, 2
     jne .waitMouseDown
 
     push dword [Mandelbrot.qwUnzoom + 4]
@@ -65,10 +67,9 @@ Mandelbrot.start:
     call Mandelbrot.handleZoom
     jmp .loop
 
-
-;; Function: handleZoom
-;;           change the world x, y, width and height values based on a
-;;           mouse click at x,y and zoom factor
+;; Function:
+;;      Change the world x, y, width and height values based on a
+;;      mouse click at x, y and zoom factor
 ;; Parameters:
 ;;      * wX
 ;;      * wY
@@ -141,7 +142,6 @@ Mandelbrot.handleZoom:
 
     pop sp
     retn 8
-
 
 ;; Function: drawMandelbrot
 Mandelbrot.draw:
@@ -294,10 +294,6 @@ Mandelbrot.draw:
     mov sp, bp
     pop bp
     ret
-
-;;
-;; DATA
-;;
 
 Mandelbrot.qwConst1: dq 1.0
 Mandelbrot.qwConst2: dq 2.0
