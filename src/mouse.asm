@@ -162,49 +162,40 @@ Mouse.callback:
     mov al, [wDx]
 
     ; new mouse X_coord = X_Coord + movementX
+    mov cx, [Mouse.wMouseX]
+    ; ax = new mouse X_coord
+    add ax, cx
+
     ; new mouse Y_coord = Y_Coord + (-movementY)
     neg dx
     mov cx, [Mouse.wMouseY]
     ; dx = new mouse Y_coord
     add dx, cx
 
-    mov cx, [Mouse.wMouseX]
-    ; ax = new mouse X_coord
-    add ax, cx
-
     ; Status
-    ; Keep two lowest bits (left and rigth button clicked)
+    ; Keep two lowest bits (left and right button info)
     and bl, 3
     ; Update the current status with the new bits
     mov [Mouse.byButtonStatus], bl
 
-    ; ax = max(0, ax)
-    cmp ax, 0
-    jge .j1
-    mov ax, 0
-
-.j1:
-    ; ax = min(ax, 319)
-    cmp ax, 319
-    jle .j2
-    mov ax, 319
-
-.j2:
-    ; dx = max(0, dx)
-    cmp dx, 0
-    jge .j3
-    mov dx, 0
-
-.j3:
-    ; dx = min(dx, 199)
-    cmp dx, 199
-    jle .j4
-    mov dx, 199
-
-.j4:
     ; Update current mouseX coord
+    ; ax = max(0, min(ax, 319))
+    mov     bx, 319
+    cmp     ax, bx
+    cmovg   ax, bx  ; use conditional mov
+    mov     bx, 0
+    cmp     ax, bx
+    cmovl   ax, bx
     mov [Mouse.wMouseX], ax
+
     ; Update current mouseY coord
+    ; dx = max(0, min(ax, 199))
+    mov     bx, 199
+    cmp     dx, bx
+    cmovg   dx, bx ; use conditional mov
+    mov     bx, 0
+    cmp     dx, bx
+    cmovl   dx, bx
     mov [Mouse.wMouseY], dx
 
     call Graphics.drawCursor
