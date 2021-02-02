@@ -29,7 +29,7 @@ BootLoader:
     ; read & start main program
     ; ah = 2 for reading
     mov ah, 0x02
-    ; drive head number, dl contains the drive number (set by BIOS)
+    ; drive head number; BIOS sets dl contains to the boot drive number
     mov dh, 0x00
     ; cylinder of drive
     mov ch, 0x00
@@ -37,28 +37,29 @@ BootLoader:
     mov al, BootLoader.MainSectorCount
     ; start sector to read from
     mov cl, 0x02
-    ; es:bx contains the target address
-    mov bx, Main.Start
+    ; es:bx: the target address
+    mov bx, Main.LoadAddress
     int 0x13
     jc .diskReadError
 
     cmp al, BootLoader.MainSectorCount
     jne .diskReadError
 
-    jmp Main.Start
+    jmp Main.LoadAddress
 
 .diskReadError:
     mov si, BootLoader.stDiskReadError
     call BootLoader.printString
-    call BootLoader.terminate
+    call BootLoader.abort
 
 
 ;; Function:
 ;;      Print a string to the terminal
 ;; Parameters
-;;      * ds:si points to string
+;;      * ds:si points to zero terminated string
 BootLoader.printString:
-    pusha
+    push ax
+    push si
 
     ; teletype output
     mov ah, 0x0e
@@ -75,13 +76,13 @@ BootLoader.printString:
     jmp .loop
 
 .ret:
-    popa
+    pop si
+    pop ax
     ret
 
 ;; Function:
-;;      terminate exection
-BootLoader.terminate:
-    jmp $
+;;      abort exection
+BootLoader.abort: jmp $
 
 BootLoader.stDiskReadError:
     db `Disk read error...\r\n`, 0
@@ -93,5 +94,5 @@ BootLoader.stDiskReadError:
 ; directive uses a negative value, causing a build error.
 times (BootLoader.SectorSize - BootLoader.WordSize) - BootLoader.CodeSize db 0
 
-; Add boot signature at the end of bootloader
+; Add boot signature at the end of boot sector
 dw 0xAA55

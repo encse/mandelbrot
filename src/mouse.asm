@@ -15,7 +15,7 @@ Mouse.start:
     call    Mouse.initialize
     jc  .ret
     call    Mouse.enable
-.ret
+.ret:
     ret
 
 ;; Function:
@@ -215,7 +215,6 @@ Mouse.callback:
     popa
     mov sp, bp
     pop bp
-
 
 Mouse.callbackDummy:
     ; This routine was reached via FAR CALL. Need a FAR RET

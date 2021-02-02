@@ -29,20 +29,20 @@ Mandelbrot.start:
 
     call Mouse.start
 
-.loop:
+.mainLoop:
     call Mandelbrot.draw
 
 .waitMouseDown:
     hlt
     mov al, [Mouse.byButtonStatus]
-    cmp al, 0
-    jz .waitMouseDown
+    test al, al
+    je .waitMouseDown
 
 .waitMouseUp:
     hlt
     mov bl, [Mouse.byButtonStatus]
-    cmp bl, 0
-    jnz .waitMouseUp
+    test bl, bl
+    jne .waitMouseUp
 
     ; left click?
     cmp al, 1
@@ -53,7 +53,7 @@ Mandelbrot.start:
     push word  [Mouse.wMouseY]
     push word  [Mouse.wMouseX]
     call Mandelbrot.handleZoom
-    jmp .loop
+    jmp .mainLoop
 
 .l1:
     ; right click?
@@ -65,7 +65,7 @@ Mandelbrot.start:
     push word [Mouse.wMouseY]
     push word [Mouse.wMouseX]
     call Mandelbrot.handleZoom
-    jmp .loop
+    jmp .mainLoop
 
 ;; Function:
 ;;      Change the world x, y, width and height values based on a

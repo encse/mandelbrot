@@ -165,16 +165,11 @@ Graphics.hideCursor:
 .loop:
     ; check that the destination is within screen limits
     mov ax, [wIcolScreen]
-    cmp ax, 0
-    jl .afterDraw
-    cmp ax, 320
+    cmp ax, 320     ; 0 <= wIcolScreen < 320
     jge .afterDraw
 
     mov ax, [wIrowScreen]
-
-    cmp ax, 0
-    jl .afterDraw
-    cmp ax, 200
+    cmp ax, 200     ; 0 <= wIrowScreen < 200
     jge .afterDraw
 
     ; we are good to draw, let's compute si and di
@@ -276,16 +271,12 @@ Graphics.drawCursor:
     ; check that the destination is within screen limits
     ; 0 <= wIcolScreen < 320 ?
     mov ax, [wIcolScreen]
-    cmp ax, 0
-    jl .afterDraw
-    cmp ax, 320
+    cmp ax, 320     ; 0 <= wIcolScreen < 320
     jge .afterDraw
-
-        ; 0 <= wIrowScreen < 320 ?
+    
+    ; 0 <= wIrowScreen < 320 ?
     mov ax, [wIrowScreen]
-    cmp ax, 0
-    jl .afterDraw
-    cmp ax, 200
+    cmp ax, 200     ; 0 <= wIrowScreen < 200
     jge .afterDraw
 
     ; we are good to draw, let's compute si and di
