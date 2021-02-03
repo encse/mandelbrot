@@ -260,9 +260,9 @@ begin
     jl .forI
 
 .endForI:
-    push word [wX]
-    push word [wY]
     push ax ; color
+    push word [wY]
+    push word [wX]
     call Graphics.setPixel
     add sp, 6
 

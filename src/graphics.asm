@@ -19,10 +19,10 @@ endproc
 proc Graphics.setPalette
     %arg rgbyPalette:word
 begin
-    pusha
+    push bx
+    push di
 
-    mov ax, [rgbyPalette]
-    mov di, ax
+    mov di, [rgbyPalette]
     
     ; palette index
     xor bx, bx 
@@ -45,22 +45,21 @@ begin
     jl .loop
 
 .ret:
-    popa
+    pop di
+    pop bx
 endproc
 
 ;; Function:
 ;;      Set the color of (x,y) to the given color in a mouse-aware way.
-;; Parameters:
-;;      * wX
-;;      * wY
-;;      * byColor
 proc Graphics.setPixel
-    %arg byColor:byte
-    %arg wY:word
     %arg wX:word
+    %arg wY:word
+    %arg wColor:word    ; 0 - 255
 begin
     push es
-    pusha
+    push bx
+    push di
+    push si
 
     ; check if x and y are valid coordinates
     mov bx, word [wX]
@@ -80,7 +79,7 @@ begin
     add ax, bx
 
     mov di, ax
-    mov cx, [byColor]
+    mov cx, [wColor]
 
     ; check if x and y is in the mouse rectangle,
     ; if yes, need to update the underlying area
@@ -122,7 +121,9 @@ begin
     mov byte [es:di], cl
 
 .ret:
-    popa
+    pop si
+    pop di
+    pop bx
     pop es
 endproc
 
@@ -135,7 +136,9 @@ proc Graphics.hideCursor
     %local wIcol:word
     %local wIrow:word
 begin
-    pusha
+    push bx
+    push di
+    push si
     push es
 
     ; es = Vga
@@ -215,7 +218,9 @@ begin
 
 .endLoop:
     pop es
-    popa
+    pop si
+    pop di
+    pop bx
 endproc
 
 
@@ -229,10 +234,12 @@ proc Graphics.drawCursor
     %arg wIcol:word
     %arg wIrow:word
 begin
-    pusha
+    push es
+    push di
+    push si
+    push bx
 
     ; es = VGA
-    push es
     push Graphics.Vga
     pop es
 
@@ -326,8 +333,10 @@ begin
     jmp .loop
 
 .endLoop:
+    pop bx
+    pop si
+    pop di
     pop es
-    popa
 endproc
 
 Graphics.rgbyCursorShape:

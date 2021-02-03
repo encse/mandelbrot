@@ -22,7 +22,6 @@ endproc
 ;; Function:
 ;;      Initialize the mouse if present
 ;; Returns: cf = 1 if error, cf = 0 success
-;; Clobbers: ax
 proc Mouse.initialize
 begin
     push es
@@ -73,7 +72,6 @@ proc Mouse.enable
 begin
     push es
     push bx
-    push ax
 
     ; disable mouse before enabling
     call Mouse.disable
@@ -91,7 +89,6 @@ begin
     mov bh, 1 
     int 0x15
 
-    pop ax
     pop bx
     pop es
 endproc
@@ -102,7 +99,6 @@ proc Mouse.disable
 begin
     push es
     push bx
-    push ax
 
     ; enable / disable mouse
     mov ax, 0xc200
@@ -115,7 +111,6 @@ begin
     mov ax, 0xc207
     int 0x15
 
-    pop ax
     pop bx
     pop es
 endproc
@@ -124,17 +119,11 @@ endproc
 ;;      called by the interrupt handler to process a mouse data packet
 ;;      All registers that are modified must be saved and restored
 ;;      Since we are polling manually this handler does nothing
-;;
-;; Parameters:
-;;      * wUnused       0
-;;      * wDy           movement y
-;;      * wDx           movement x
-;;      * byStatus      mouse status byte
 farproc Mouse.callback
     %arg wUnused:word
     %arg wDy:word
     %arg wDx:word
-    %arg byStatus:byte
+    %arg wStatus:word
 begin
     pusha
     push ds
@@ -146,27 +135,32 @@ begin
 
     call Graphics.hideCursor
 
-    mov al, [byStatus]
-    ; bl = copy of status byte
-    mov bl, al
-    ; Shift signY (bit 5) left 3 bits
-    mov cl, 3
-    ; cf = signY; Sign bit of al = SignX
-    shl al, cl
+    mov ax, [wStatus]
 
-    ; dh = SignY value set in all bits
-    ; ah = SignX value set in all bits
-    sbb dh, dh 
-    cbw 
-    ; dl = movementY
-    ; al = movementX
+    ; set Mouse.byButtonStatus
+    mov bl, al
+    ; keep button info
+    and bl, 3
+    mov [Mouse.byButtonStatus], bl
+
+    mov cl, 3
+    shl al, cl      ; CF = signY
+    sbb dh, dh      ; fill DH with the sign bit from CF
     mov dl, [wDy]
+    cbw             ; fill AH with the sign bit from AL
     mov al, [wDx]
 
-    ; new mouse X_coord = X_Coord + movementX
+    ; Update current mouseX coord
     mov cx, [Mouse.wMouseX]
-    ; ax = new mouse X_coord
     add ax, cx
+    ; ax = max(0, min(ax, 319))
+    mov     bx, 319
+    cmp     ax, bx
+    cmovg   ax, bx ; ax = min(ax, 319)
+    xor     bx, bx
+    cmp     ax, bx
+    cmovl   ax, bx ; ax = max(0, ax)
+    mov [Mouse.wMouseX], ax
 
     ; new mouse Y_coord = Y_Coord + (-movementY)
     neg dx
@@ -174,30 +168,14 @@ begin
     ; dx = new mouse Y_coord
     add dx, cx
 
-    ; Status
-    ; Keep two lowest bits (left and right button info)
-    and bl, 3
-    ; Update the current status with the new bits
-    mov [Mouse.byButtonStatus], bl
-
-    ; Update current mouseX coord
-    ; ax = max(0, min(ax, 319))
-    mov     bx, 319
-    cmp     ax, bx
-    cmovg   ax, bx  ; use conditional mov
-    mov     bx, 0
-    cmp     ax, bx
-    cmovl   ax, bx
-    mov [Mouse.wMouseX], ax
-
     ; Update current mouseY coord
-    ; dx = max(0, min(ax, 199))
+    ; dx = max(0, min(dx, 199))
     mov     bx, 199
     cmp     dx, bx
-    cmovg   dx, bx ; use conditional mov
+    cmovg   dx, bx ; dx = min(dx, 199)
     mov     bx, 0
     cmp     dx, bx
-    cmovl   dx, bx
+    cmovl   dx, bx ; dx = max(0, dx)
     mov [Mouse.wMouseY], dx
 
     call Graphics.drawCursor
