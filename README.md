@@ -4,6 +4,8 @@ A 16 bit bootloader written in assembly, featuring 320x200 graphics with 256 col
 
 ![screenshot](site/screenshot.png)
 
+Live demo available [here](https://csokavar.hu/projects/mandelbrot).
+
 I used Qemu and Nasm on my mac for development:
 
 ```
