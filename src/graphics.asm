@@ -14,10 +14,8 @@ endproc
 
 ;; Function:
 ;;      set vga palette
-;; Parameters:
-;;      * rgbyPalette       near pointer to palette with 256 * 3 bytes of R, G, B colors
 proc Graphics.setPalette
-    %arg rgbyPalette:word
+    %arg rgbyPalette:word   ; near pointer to palette with 256 * 3 bytes of R, G, B colors
 begin
     push bx
     push di

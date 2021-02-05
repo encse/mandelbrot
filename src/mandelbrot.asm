@@ -73,10 +73,6 @@ Mandelbrot.start:
 ;; Function:
 ;;      Change the world x, y, width and height values based on a
 ;;      mouse click at x, y and zoom factor
-;; Parameters:
-;;      * wX
-;;      * wY
-;;      * qwZoom
 proc Mandelbrot.handleZoom
     %arg wX:word
     %arg wY:word
