@@ -21,5 +21,6 @@ To build and run:
 The makefile creates a bootable [floppy image](bin/boot.img) as well. This can be used in VirtualBox 
 or on real hardware:
 
-![screenshot](site/p3.jpg | width=320)
+<img src="site/p3.jpg" width="600" />
+
 
