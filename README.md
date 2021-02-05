@@ -19,7 +19,7 @@ To build and run:
 ```
 
 The makefile creates a bootable [floppy image](bin/boot.img) as well. This can be used in VirtualBox 
-or possibly on a physical machine.
+or on real hardware:
 
-I would be *really grateful* if somebody could boot this on a real 
-machine and sent a photo of it if works...
+![screenshot](site/p3.jpg)
+
