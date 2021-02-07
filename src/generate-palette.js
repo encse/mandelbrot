@@ -18,9 +18,9 @@ function HSVToRGB(h, s, v) {
         case 5: r = v, g = p, b = q; break;
     }
     return [
-        Math.round(r * 255),
-        Math.round(g * 255),
-        Math.round(b * 255)
+        Math.round(r * 63),
+        Math.round(g * 63),
+        Math.round(b * 63)
     ];
 }
 
@@ -33,7 +33,7 @@ for (let j = 0; j < 64; j++) {
     for (let i = 0; i < 4; i++) {
         let c = j * 4 + i;
 
-        const [r, g, b] = (c >= 253 ? [0, 0, 0] : HSVToRGB(c / 256, 1, 1)).map(toHex);
+        const [r, g, b] = (c >= 254 ? [0, 0, 0] : HSVToRGB(c / 256, 1, 1)).map(toHex);
 
         if (i > 0) {
             st += ",    ";
