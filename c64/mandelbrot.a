@@ -1,0 +1,357 @@
+; http://www.6502.org/tutorials/6502opcodes.html
+; https://sites.google.com/site/6502asembly/6502-instruction-set
+; https://github.com/meonwax/acme/tree/master/docs
+    !src <cbm/c64/float.a>
+    
+    !to "mandelbrot.prg",cbm
+
+    ; * = $0801                               ; BASIC start address (#2049)
+    ; !byte $0d,$08,$dc,$07,$9e,$20,$34,$39   ; BASIC loader to start at $c000...
+    ; !byte $31,$35,$32,$00,$00,$00           ; puts BASIC line 2012 SYS 49152
+
+;https://csdb.dk/forums/?roomid=11&topicid=3541&showallposts=1
+; $92-$96 (only if no datasette is used)
+; $A3-$B1 (only if no RS-232 and datasette is used)
+; $F7-$FA (only if no RS-232 is used)
+; $FB-$FE (always)
+
+bmpage = $ff
+mask = $59
+loc = $5a
+store = $5c
+
+
+!macro dump_mflpt @addr {
+    +movYYAA @addr
+    jsr fac1_read_memYYAA
+    jsr fac1_print
+}
+
+;   maxIterations = 4
+;   dc = 0.01
+;   c2 = -1.0
+;   for y in 0..200:
+;       c1 = -2.0
+;       for x in 0..320:
+;           z1 = 0
+;           z2 = 0
+;           for i in 0..maxIterations:
+;               tmp = z1 * z1 - z2 * z2 + c1
+;               z2 = 2 * z1 * z2 + c2
+;               z1 = tmp
+;               if (z1 * z1 + z2 * z2 >= 4):
+;                   setColor(x,y,i)
+;                   break
+;           c1 += dc
+;       c2 += dc
+
+
+    MAX_ITERATIONS = 16
+
+    *= $1000
+    
+    jsr initGraphics
+
+    lda #0
+    sta y
+    sta y + 1
+.forY:
+    ; c1 = c01
+    +ldAAYY mflpt_c01
+    +stAAYY mflpt_c1
+    ; for x in 0..320:
+    
+    ; x = 0
+    lda #0
+    sta x
+    sta x + 1
+.forX:
+    +ldAAYY mflpt_0
+    ; z1 = 0
+    +stAAYY mflpt_z1
+    ; z1 = 0
+    +stAAYY mflpt_z2
+
+    ; for z in 0..maxIterations:
+    ; z = 0
+    lda #MAX_ITERATIONS
+    sta i
+    ;+dump_mflpt mflpt_c1
+    ;+dump_mflpt mflpt_c2
+.forI: 
+    jsr updateZ
+    ;+dump_mflpt mflpt_z1
+    ;+dump_mflpt mflpt_z2
+    jsr checkDivergence
+    bpl .nextX
+
+.nextI:
+    ldx i
+    dex
+    stx i
+    bne .forI
+
+    jsr setPoint
+    lda #200
+    sbc y
+    sta y
+
+    jsr setPoint
+    lda #200
+    sbc y
+    sta y
+
+.nextX:
+
+    ldx x
+    inx 
+    stx x
+    beq .nextY
+
+    ; c1 += dc
+    +movYYAA mflpt_c1
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_dC
+    jsr fac1_add_memYYAA
+
+    +movYYXX mflpt_c1
+    jsr fac1_to_memYYXX
+
+    jmp .forX
+.nextY:
+
+    ldx y
+    inx 
+    stx y
+    beq .done
+
+     ; c2 += dc
+    +movYYAA mflpt_c2
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_dC
+    jsr fac1_add_memYYAA
+    
+    +movYYXX mflpt_c2
+    jsr fac1_to_memYYXX
+
+
+    jmp .forY
+.done:
+
+    rts
+
+; compute z = z^2 + c
+updateZ:
+    ; compute tmp = z1 * z1 - z2 * z2 + c1 
+    
+    ; tmp = z1 * z1
+    +movYYAA mflpt_z1
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_z1
+    jsr fac1_times_memYYAA
+
+    +movYYXX mflpt_tmp
+    jsr fac1_to_memYYXX
+
+    ; fac1 = - z2 * z2
+    +movYYAA mflpt_z2
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_z2
+    jsr fac1_times_memYYAA
+    jsr fac1_negate
+
+    ; fac1 = -z2 * z2 + c1
+    +movYYAA mflpt_c1
+    jsr fac1_add_memYYAA
+
+    ; fac1 = z1 * z1 - z2 * z2 + c1
+    +movYYAA mflpt_tmp
+    jsr fac1_add_memYYAA
+
+    ; tmp = z1 * z1 - z2 * z2 + c1 
+    +movYYXX mflpt_tmp
+    jsr fac1_to_memYYXX
+
+    ; now compute z2 = 2 * z1 * z2 + c2
+    
+    ; fac1 = z1
+    +movYYAA mflpt_z1
+    jsr fac1_read_memYYAA
+
+    ; fac1 = 2 * z1
+    +movYYAA mflpt_z1
+    jsr fac1_add_memYYAA
+
+    ; fac1 = 2 * z1 * z2
+    +movYYAA mflpt_z2
+    jsr fac1_times_memYYAA
+
+    ; fac1 = 2 * z1 * z2 + c2
+    +movYYAA mflpt_c2
+    jsr fac1_add_memYYAA
+
+    ; z2 = 2 * z1 * z2 + c2
+    +movYYXX mflpt_z2
+    jsr fac1_to_memYYXX
+
+    ; z1 = tmp
+    +movYYAA mflpt_tmp
+    jsr fac1_read_memYYAA
+    +movYYXX mflpt_z1
+    jsr fac1_to_memYYXX
+
+    jsr checkDivergence
+    rts
+
+
+; N is set if |Z| > 2
+checkDivergence:
+
+    ; fac1 = z1 * z1
+    +movYYAA mflpt_z1
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_z1
+    jsr fac1_times_memYYAA
+
+    ; tmp = z1 * z1
+    +movYYXX mflpt_tmp
+    jsr fac1_to_memYYXX
+
+    ; fac1 = z2 * z2
+    +movYYAA mflpt_z2
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_z2
+    jsr fac1_times_memYYAA
+
+    ; fac1 = z1 * z1 + z2 * z2
+    +movYYAA mflpt_tmp
+    jsr fac1_add_memYYAA
+
+    +movYYAA mflpt_4
+    jsr fac1_compare_to_memYYAA
+
+    rts
+
+setPoint:
+; https://github.com/spoitras/High-resolution-plot-sub-routine/blob/master/plot.asm
+    ; address = base + int(y/8) * 320 + (y and 7) + int(x/8) * 8
+    lda	x
+    and	#7
+    tax
+    sec
+    lda	#0
+    sta loc
+.shift:	
+    ror
+    dex
+    bpl .shift
+    sta mask
+    lda x
+    and #$f8
+    sta store
+    lda y
+    lsr
+    lsr
+    lsr
+    sta loc+1
+    lsr
+    ror	loc
+    lsr
+    ror	loc
+    adc loc+1
+    sta loc+1
+    lda y
+    and #7
+    adc loc
+    adc store
+    sta loc
+    lda loc+1
+    adc x+1
+    adc bmpage
+    sta loc+1
+    ldy	#0
+    lda (loc),y
+    ora mask,y
+    sta (loc),y
+    rts
+
+
+initGraphics:
+    ; Toggle standard Bitmap Mode 
+    lda $d018 ; 53272
+    ora #8
+    sta $d018
+
+    lda $d011 ; 53265
+    ora #32
+    sta $d011
+
+    ; Set colors
+    ldx #0
+    lda #14
+.setColor:
+    ; $0400-$07ff screen ram
+    sta $400, X
+    sta $500, X
+    sta $600, X
+    sta $700, X  
+    inx
+    bne .setColor
+
+    ; Clear screen
+    ldx #0
+    lda #0 
+.clearScreen:
+    ;$2000 - $3fff: Bitmap RAM
+    sta $2000, X
+    sta $2100, X
+    sta $2200, X
+    sta $2300, X
+    sta $2400, X
+    sta $2500, X
+    sta $2600, X
+    sta $2700, X
+    sta $2800, X
+    sta $2900, X
+    sta $2a00, X
+    sta $2b00, X
+    sta $2c00, X
+    sta $2d00, X
+    sta $2e00, X
+    sta $2f00, X
+    sta $3000, X
+    sta $3100, X
+    sta $3200, X
+    sta $3300, X
+    sta $3400, X
+    sta $3500, X
+    sta $3600, X
+    sta $3700, X
+    sta $3800, X
+    sta $3900, X
+    sta $3a00, X
+    sta $3b00, X
+    sta $3c00, X
+    sta $3d00, X
+    sta $3e00, X
+    sta $3f00, X
+    inx
+    bne .clearScreen
+    
+    rts
+
+
+
+
+x:            !word 0
+y:            !word 0
+i:            !word 0
+mflpt_4:      +mflpt  4.0
+mflpt_0:      +mflpt  0.0
+mflpt_dC:     +mflpt  0.01
+mflpt_c01:    +mflpt -2.0
+mflpt_c1:     +mflpt  0.0
+mflpt_c2:     +mflpt  -1.0
+mflpt_z1:     +mflpt  -2.0
+mflpt_z2:     +mflpt  -1.0
+mflpt_tmp:    +mflpt  0.0

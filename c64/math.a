@@ -1,0 +1,47 @@
+; http://www.6502.org/tutorials/6502opcodes.html
+; https://sites.google.com/site/6502asembly/6502-instruction-set
+    !src <cbm/c64/float.a>
+    
+    !to "math.prg",cbm
+
+    ; * = $0801                               ; BASIC start address (#2049)
+    ; !byte $0d,$08,$dc,$07,$9e,$20,$34,$39   ; BASIC loader to start at $c000...
+    ; !byte $31,$35,$32,$00,$00,$00           ; puts BASIC line 2012 SYS 49152
+
+    *= $1000
+    jsr print_pi_times_minus_pi
+    rts
+
+print_pi:
+    +movYYAA mflpt_pi
+    jsr fac1_read_memYYAA
+    jsr fac1_print
+    rts
+
+print_pi_half:
+    +movYYAA mflpt_pi
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_point5
+    jsr fac1_times_memYYAA
+
+    jsr fac1_print
+    rts
+
+print_sq_pi:
+    +movYYAA mflpt_pi
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_pi
+    jsr fac1_times_memYYAA
+
+    jsr fac1_print
+    rts
+
+print_pi_times_minus_pi:
+    +movYYAA mflpt_pi
+    jsr fac1_read_memYYAA
+    jsr fac1_negate
+    +movYYAA mflpt_pi
+    jsr fac1_times_memYYAA
+
+    jsr fac1_print
+    rts
