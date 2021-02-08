@@ -67,21 +67,18 @@ store = $5c
     sta x + 1
 .forX:
     +ldAAYY mflpt_0
-    ; z1 = 0
+    ; z1 = z2 = z1^2 = z2^2 = 0
     +stAAYY mflpt_z1
-    ; z1 = 0
     +stAAYY mflpt_z2
+    +stAAYY mflpt_z2Sq
+    +stAAYY mflpt_z1Sq
 
-    ; for z in 0..maxIterations:
-    ; z = 0
+    ; for i in 0..maxIterations:
+    ; i = 0
     lda #MAX_ITERATIONS
     sta i
-    ;+dump_mflpt mflpt_c1
-    ;+dump_mflpt mflpt_c2
 .forI: 
     jsr updateZ
-    ;+dump_mflpt mflpt_z1
-    ;+dump_mflpt mflpt_z2
     jsr checkDivergence
     bpl .nextX
 
@@ -91,6 +88,7 @@ store = $5c
     stx i
     bne .forI
 
+    ; set x,y and also x, (200 - y) because of pattern symmetry
     jsr setPoint
     lda #200
     sbc y
@@ -113,7 +111,6 @@ store = $5c
     jsr fac1_read_memYYAA
     +movYYAA mflpt_dC
     jsr fac1_add_memYYAA
-
     +movYYXX mflpt_c1
     jsr fac1_to_memYYXX
 
@@ -130,50 +127,37 @@ store = $5c
     jsr fac1_read_memYYAA
     +movYYAA mflpt_dC
     jsr fac1_add_memYYAA
-    
     +movYYXX mflpt_c2
     jsr fac1_to_memYYXX
-
 
     jmp .forY
 .done:
 
     rts
 
-; compute z = z^2 + c
+; compute z = z^2 + c, update z^2
+
 updateZ:
     ; compute tmp = z1 * z1 - z2 * z2 + c1 
     
-    ; tmp = z1 * z1
-    +movYYAA mflpt_z1
+     ; fac1 = - z2 * z2
+    +movYYAA mflpt_z2Sq
     jsr fac1_read_memYYAA
-    +movYYAA mflpt_z1
-    jsr fac1_times_memYYAA
-
-    +movYYXX mflpt_tmp
-    jsr fac1_to_memYYXX
-
-    ; fac1 = - z2 * z2
-    +movYYAA mflpt_z2
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_z2
-    jsr fac1_times_memYYAA
     jsr fac1_negate
 
-    ; fac1 = -z2 * z2 + c1
+    ; fac1 += z1 * z1
+    +movYYAA mflpt_z1Sq
+    jsr fac1_add_memYYAA
+   
+    ; fac1 += c1
     +movYYAA mflpt_c1
     jsr fac1_add_memYYAA
 
-    ; fac1 = z1 * z1 - z2 * z2 + c1
-    +movYYAA mflpt_tmp
-    jsr fac1_add_memYYAA
-
-    ; tmp = z1 * z1 - z2 * z2 + c1 
+    ; tmp = fac1
     +movYYXX mflpt_tmp
     jsr fac1_to_memYYXX
 
     ; now compute z2 = 2 * z1 * z2 + c2
-    
     ; fac1 = z1
     +movYYAA mflpt_z1
     jsr fac1_read_memYYAA
@@ -200,36 +184,34 @@ updateZ:
     +movYYXX mflpt_z1
     jsr fac1_to_memYYXX
 
+    ; update z1^2 and z2^2
+    +movYYAA mflpt_z1
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_z1
+    jsr fac1_times_memYYAA
+    +movYYXX mflpt_z1Sq
+    jsr fac1_to_memYYXX
+
+    +movYYAA mflpt_z2
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_z2
+    jsr fac1_times_memYYAA
+    +movYYXX mflpt_z2Sq
+    jsr fac1_to_memYYXX
+
     jsr checkDivergence
     rts
 
 
 ; N is set if |Z| > 2
 checkDivergence:
-
-    ; fac1 = z1 * z1
-    +movYYAA mflpt_z1
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_z1
-    jsr fac1_times_memYYAA
-
-    ; tmp = z1 * z1
-    +movYYXX mflpt_tmp
-    jsr fac1_to_memYYXX
-
-    ; fac1 = z2 * z2
-    +movYYAA mflpt_z2
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_z2
-    jsr fac1_times_memYYAA
-
     ; fac1 = z1 * z1 + z2 * z2
-    +movYYAA mflpt_tmp
+    +movYYAA mflpt_z1Sq
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_z2Sq
     jsr fac1_add_memYYAA
-
     +movYYAA mflpt_4
     jsr fac1_compare_to_memYYAA
-
     rts
 
 setPoint:
@@ -351,7 +333,9 @@ mflpt_0:      +mflpt  0.0
 mflpt_dC:     +mflpt  0.01
 mflpt_c01:    +mflpt -2.0
 mflpt_c1:     +mflpt  0.0
-mflpt_c2:     +mflpt  -1.0
-mflpt_z1:     +mflpt  -2.0
-mflpt_z2:     +mflpt  -1.0
+mflpt_c2:     +mflpt -1.0
+mflpt_z1:     +mflpt  0.0
+mflpt_z1Sq:   +mflpt  0.0
+mflpt_z2:     +mflpt  0.0
+mflpt_z2Sq:   +mflpt  0.0
 mflpt_tmp:    +mflpt  0.0
