@@ -140,15 +140,12 @@ store = $5c
 updateZ:
     ; compute tmp = z1 * z1 - z2 * z2 + c1 
     
-     ; fac1 = - z2 * z2
+    ; fac1 = z2^2
     +movYYAA mflpt_z2Sq
     jsr fac1_read_memYYAA
-    jsr fac1_negate
-
-    ; fac1 += z1 * z1
-    +movYYAA mflpt_z1Sq
-    jsr fac1_add_memYYAA
-   
+    ; fac1 = z1^2 - z2^2
+    +movYYAA mflpt_z1Sq 
+    jsr fac1_memYYAA_minus_fac1 
     ; fac1 += c1
     +movYYAA mflpt_c1
     jsr fac1_add_memYYAA
@@ -215,7 +212,7 @@ checkDivergence:
     rts
 
 setPoint:
-; https://github.com/spoitras/High-resolution-plot-sub-routine/blob/master/plot.asm
+    ; https://github.com/spoitras/High-resolution-plot-sub-routine/blob/master/plot.asm
     ; address = base + int(y/8) * 320 + (y and 7) + int(x/8) * 8
     lda	x
     and	#7
