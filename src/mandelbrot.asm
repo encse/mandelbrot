@@ -143,10 +143,12 @@ proc Mandelbrot.draw
     %local wX:word
     %local wY:word
     %local wI:word
-    %local qwC1:qword
-    %local qwC2:qword
-    %local qwZ1:qword
-    %local qwZ2:qword
+    %local qwC1:qword           ; re(c)
+    %local qwC2:qword           ; im(c)
+    %local qwZ1:qword           ; re(z)
+    %local qwZ2:qword           ; im(z)
+    %local qwZ1Sq:qword         ; re(z) ^ 2 these are maintained to spare some multiplications
+    %local qwZ2Sq:qword         ; im(z) ^ 2
     %local qwTmp:qword
 begin
     finit
@@ -165,10 +167,12 @@ begin
     fstp qword [qwC1]
 
 .forX:
-    ; z1 = z2 = 0
+    ; z1 = z2 = z1^2 = z2^2 = 0
     fldz
     fst qword [qwZ1]
-    fstp qword [qwZ2]
+    fst qword [qwZ1Sq]
+    fst qword [qwZ2]
+    fstp qword [qwZ2Sq]
 
     ; c1 = worldX + worldWidth / screenWidth * x
     fld qword [Mandelbrot.qwWorldX]
@@ -200,31 +204,13 @@ begin
     mov [wI], ax
 
 .forI:
-    ; tmp = z1 * z1 - z2 * z2 + c1 ;; 
-    ; fld qword [qwC1]
-    ; fld qword [qwZ2]
-    ; fmul st0
-    ; fld qword [qwZ1]
-    ; fmul st0
-    ; fsub st1
-    ; fadd st2
-    ; fstp qword [qwTmp]
-    ; fstp st0
-    ; fstp st0
-
-    ; tmp = (z1 - z2) * (z1 + z2) + c1
-    fld qword [qwZ2]
-    fld qword [qwZ1]
-    fadd st1
-    fld qword [qwZ2]
-    fld qword [qwZ1]
+    ; tmp = z1^2 - z2^2 + c1 
+    fld qword [qwZ2Sq]
+    fld qword [qwZ1Sq]
     fsub st1
-    fmul st2
     fld qword [qwC1]
     fadd st1
     fstp qword [qwTmp]
-    fstp st0
-    fstp st0
     fstp st0
     fstp st0
 
@@ -236,21 +222,24 @@ begin
     fmul st1
     fmul st2
     fadd st3
-    fstp qword [qwZ2]
+    fst qword [qwZ2]
+    fmul st0
+    ; don't forget to update z2^2
+    fstp qword [qwZ2Sq]
     fstp st0
     fstp st0
     fstp st0
 
-    ; z1 = tmp
+    ; z1 = tmp & update z1^2
     fld qword [qwTmp]
-    fstp qword [qwZ1]
+    fst qword [qwZ1]
+    fmul st0
+    fstp qword [qwZ1Sq]
 
-    ; if (z1 * z1 + z2 * z2 >= 4) 
+    ; if (z1 ^ 2 + z2 ^ 2 >= 4) 
     ;   break
-    fld qword [qwZ2]
-    fmul st0
-    fld qword [qwZ1]
-    fmul st0
+    fld qword [qwZ2Sq]
+    fld qword [qwZ1Sq]
     fadd
     fld qword [Mandelbrot.qwConst4]
     fcomi st1
@@ -316,7 +305,7 @@ Mandelbrot.qwZoom: dq 2.0
 Mandelbrot.qwUnzoom: dq 0.5
 
 Mandelbrot.rgbyPalette:
-       db	0x3f, 0x00, 0x00,    0x3f, 0x01, 0x00,    0x3f, 0x03, 0x00,    0x3f, 0x04, 0x00
+    db	0x3f, 0x00, 0x00,    0x3f, 0x01, 0x00,    0x3f, 0x03, 0x00,    0x3f, 0x04, 0x00
     db	0x3f, 0x06, 0x00,    0x3f, 0x07, 0x00,    0x3f, 0x09, 0x00,    0x3f, 0x0a, 0x00
     db	0x3f, 0x0c, 0x00,    0x3f, 0x0d, 0x00,    0x3f, 0x0f, 0x00,    0x3f, 0x10, 0x00
     db	0x3f, 0x12, 0x00,    0x3f, 0x13, 0x00,    0x3f, 0x15, 0x00,    0x3f, 0x16, 0x00
