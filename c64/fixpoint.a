@@ -1,0 +1,128 @@
+
+; KICSI-NAGY
+
+!src "16bit.a"
+addr0 = $22 ; low
+addr1 = $23 ; high
+
+; some functions need a memory address in YYAA
+!macro movYYAA @addr {
+	lda #<@addr
+	ldy #>@addr
+}
+; ...or in YYXX
+!macro movYYXX @addr {
+	ldx #<@addr
+	ldy #>@addr
+}
+; other float functions expect or output a value in AAYY
+!macro movAAYY @val {
+	ldy #<@val
+	lda #>@val
+}
+!macro ldAAYY @addr {
+	ldy @addr
+	lda @addr + 1
+}
+!macro stAAYY @addr {
+	sty @addr
+	sta @addr + 1
+}
+; ...or in AAXX
+!macro ldAAXX @addr {
+	ldx @addr
+	lda @addr + 1
+}
+
+!set fraction_bits = 10
+!macro mflpt @value {
+    !set @num = int(float(@value) * (1<<(fraction_bits-1)) + 0.5)
+    !if @num >0{
+        !if @num > 32767 {
+            !error "FLPT overflow"
+        }
+        !by 255 & @num
+        !by 255 & (@num >> 8)
+
+    } else if @num = 0 {
+        !by 0, 0
+    } else {
+        !if @num < -32768 {
+            !error "FLPT underflow"
+        }
+        !set @num = 0xffff + @num
+        !by 255 & @num
+        !by 255 & (@num >> 8)
+    }
+}
+
+
+!macro _mflpt @value {
+	!set @float = float(@value)	; make sure to do passes until value is defined
+	!ifndef @float {
+		!by $ff, $ff, $ff, $ff, $ff	; five place holder bytes
+	} else {
+		; value is defined, so split up into sign and non-negative value
+		!if @float < 0 {
+			!set @sign = $80
+			!set @float = -@float
+		} else {
+			!set @sign = $00
+		}
+		!if @float = 0 {
+			!by 0, 0, 0, 0, 0	; five zeroes (zero is represented by all bits zero)
+		} else {
+			; split up into exponent and mantissa
+			!set @exponent = 128 + 32	; 128 is cbm's bias, 32 is this algo's bias
+			; if mantissa is too large, shift right and adjust exponent
+			!do while @float >= (2.0 ^ 32.0) {
+				!set @float = @float >> 1
+				!set @exponent = @exponent + 1
+			}
+			; if mantissa is too small, shift left and adjust exponent
+			!do while @float < (2.0 ^ 31.0) {
+				!set @float = @float << 1
+				!set @exponent = @exponent - 1
+			}
+			!if @exponent < 1 {
+				!warn "MFLPT underflow, using zero instead"
+				!set @float = 0
+				!set @exponent = 0
+				!set @sign = 0
+			}
+			!if @exponent > 255 {
+				!error "MFLPT overflow"
+			}
+			!by @exponent
+			!by (127 & int(@float >> 24)) | @sign
+			!by 255 & int(@float >> 16)
+			!by 255 & int(@float >> 8)
+			!by 255 & int(@float)
+		}
+	}
+}
+
+q: +_mflpt 1.0 /  (1<<(fraction_bits-1))
+
+fac1_read_memYYAA: 
+    sta addr0
+    sty addr1
+    ldy #0
+    lda (addr0), y
+    sta x0
+    iny
+    lda (addr0), y
+    sta x1
+    rts
+
+
+fac1_print:
+
+    ldy x0
+    lda x1
+    
+    jsr _fac1_read_signedAAYY
+    +movYYAA q
+    jsr _fac1_times_memYYAA
+    jsr _fac1_print
+    rts

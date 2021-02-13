@@ -1,9 +1,9 @@
 all: math.prg mandelbrot.prg
 
-math.prg: math.a 
+math.prg: math.a 16bit.a fixpoint.a
 	ACME=ACME_LIB acme math.a 
 
-mandelbrot.prg: mandelbrot.a
+mandelbrot.prg: mandelbrot.a 16bit.a fixpoint.a
 	ACME=ACME_LIB acme mandelbrot.a 
 
 run: math.prg
