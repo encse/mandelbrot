@@ -1,47 +1,253 @@
 ; http://www.6502.org/tutorials/6502opcodes.html
 ; https://sites.google.com/site/6502asembly/6502-instruction-set
-    !src <cbm/c64/float.a>
     
+
+;https://github.com/meonwax/acme/blob/master/docs/AddrModes.txt
+; Applying the byte extraction operators ("<" gives the low byte, ">"
+; gives the high byte and "^" gives the bank byte of a value) to any
+; value will clear the argument's Force Bits 2 and 3 and set Force
+; Bit 1 instead. So "lda <symbol" will use 8-bit addressing, regardless
+; of the symbol's Force Bits. Of course, you can change this by
+; postfixing the command again... :
+
     !to "math.prg",cbm
+    
+    !src <cbm/c64/float.a>
 
     ; * = $0801                               ; BASIC start address (#2049)
     ; !byte $0d,$08,$dc,$07,$9e,$20,$34,$39   ; BASIC loader to start at $c000...
     ; !byte $31,$35,$32,$00,$00,$00           ; puts BASIC line 2012 SYS 49152
 
+KernalPrintYYAA = $AB1E ; prints string located at YYAA
+KernalNewLine   = $AAD7 ; prints new line
+
+;tables of squares
+;sqr(x)=x^2/4
+;negsqr(x)=(255-x)^2/4
+sqrlo=$c000;511 bytes
+sqrhi=$c200;511 bytes
+negsqrlo=$c400;511 bytes
+negsqrhi=$c600;511 bytes
+
+;pointers to square tables above
+p_sqr_lo=$8b;2 bytes
+p_sqr_hi=$8d;2 bytes
+p_invsqr_lo=$8f;2 bytes
+p_invsqr_hi=$91;2 bytes
+
+
+    
+;the inputs and outputs
+x0=$fb;multiplier, 2 bytes
+x1=$fc
+y0=$fd;multiplicand, 2 bytes
+y1=$fe
+z0=$80; product, 2 bytes
+z1=$81
+;z2=$82 returned in X reg
+;z3=$83 returned in Y reg
+
+!macro movX @val {
+    lda #<@val
+    sta x0
+    lda #>@val
+    sta x1
+}
+
+!macro movY @val {
+    lda #<@val
+    sta y0
+    lda #>@val
+    sta y1
+}
+
     *= $1000
-    jsr print_pi_times_minus_pi
+
+    jsr maketables
+
+    +movX 5
+    +movY 5
+    jsr umult16
+    jsr printMulResult
+
+    +movX 10
+    +movY 5
+    jsr umult16
+    jsr printMulResult
+   
     rts
 
-print_pi:
-    +movYYAA mflpt_pi
-    jsr fac1_read_memYYAA
-    jsr fac1_print
+
+
+
+
+printMulResult:
+    ldx z0
+    lda z1
+    jsr fac1_print_unsignedAAXX
+    jsr KernalNewLine
+   
     rts
 
-print_pi_half:
-    +movYYAA mflpt_pi
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_point5
-    jsr fac1_times_memYYAA
 
-    jsr fac1_print
-    rts
+sp_message: !text "YOU FOUND 10 PIECES OF GOLD." 
+!by 0
 
-print_sq_pi:
-    +movYYAA mflpt_pi
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_pi
-    jsr fac1_times_memYYAA
+maketables:
+;init zp square tables pointers
+lda #<sqrlo
+sta p_sqr_lo
+lda #>sqrlo
+sta p_sqr_lo+1
 
-    jsr fac1_print
-    rts
+lda #<sqrhi
+sta p_sqr_hi
+lda #>sqrhi
+sta p_sqr_hi+1
 
-print_pi_times_minus_pi:
-    +movYYAA mflpt_pi
-    jsr fac1_read_memYYAA
-    jsr fac1_negate
-    +movYYAA mflpt_pi
-    jsr fac1_times_memYYAA
+lda #<negsqrlo
+sta p_invsqr_lo
+lda #>negsqrlo
+sta p_invsqr_lo+1
 
-    jsr fac1_print
-    rts
+lda #<negsqrhi
+sta p_invsqr_hi
+lda #>negsqrhi
+sta p_invsqr_hi+1
+
+;generate sqr(x)=x^2/4
+      ldx #$00
+      txa
+      !by $c9   ; CMP #immediate - skip TYA and clear carry flag
+lb1:  tya
+      adc #$00
+ml1:  sta sqrhi,x
+      tay
+      cmp #$40
+      txa
+      ror
+ml9:  adc #$00
+      sta ml9+1
+      inx
+ml0:  sta sqrlo,x
+      bne lb1
+      inc ml0 + 2
+      inc ml1 + 2
+      clc
+      iny
+      bne lb1
+
+;generate negsqr(x)=(255-x)^2/4
+      ldx #$00
+      ldy #$ff
+mt1:
+      lda sqrhi+1,x
+      sta negsqrhi+$100,x
+      lda sqrhi,x
+      sta negsqrhi,y
+      lda sqrlo+1,x
+      sta negsqrlo+$100,x
+      lda sqrlo,x
+      sta negsqrlo,y
+      dey
+      inx
+      bne mt1
+      rts
+
+umult16:
+;set multiplier as x0
+lda x0
+sta p_sqr_lo
+sta p_sqr_hi
+eor #$ff
+sta p_invsqr_lo
+sta p_invsqr_hi;17
+
+ldy y0
+sec
+lda (p_sqr_lo),y
+sbc (p_invsqr_lo),y;note these two lines taken as 11 total
+sta z0;x0*y0l
+lda (p_sqr_hi),y
+sbc (p_invsqr_hi),y
+sta c1a+1;x0*y0h;31
+;c1a means column 1, row a (partial product to be added later)
+
+ldy y1
+;sec  ;notice that the high byte of sub above is always +ve
+lda (p_sqr_lo),y
+sbc (p_invsqr_lo),y
+sta c1b+1;x0*y1l
+lda (p_sqr_hi),y
+sbc (p_invsqr_hi),y
+sta c2a+1;x0*y1h;31
+
+;set multiplier as x1
+lda x1
+sta p_sqr_lo
+sta p_sqr_hi
+eor #$ff
+sta p_invsqr_lo
+sta p_invsqr_hi;17
+
+ldy y0
+;sec
+lda (p_sqr_lo),y
+sbc (p_invsqr_lo),y
+sta c1c+1;x1*y0l
+lda (p_sqr_hi),y
+sbc (p_invsqr_hi),y
+sta c2b+1;x1*y1h;31
+
+ldy y1
+;sec
+lda (p_sqr_lo),y
+sbc (p_invsqr_lo),y
+sta c2c+1;x1*y1l
+lda (p_sqr_hi),y
+sbc (p_invsqr_hi),y
+tay;x1*y1h;Y=z3, 30 cycles
+;17+33+31+17+31+30=159 cycles for main multiply part
+
+;jmp do_adds; can put do_adds in zp for a slight speed increase
+do_adds:
+;-add the first two numbers of column 1
+	clc
+c1a:	lda #0
+c1b:	adc #0
+	sta z1;9
+
+;-continue to first two numbers of column 2
+c2a:	lda #0
+c2b:	adc #0
+	tax;X=z2, 6 cycles
+	bcc c1c;3/6 avg 4.5
+	iny;z3++
+	clc
+
+;-add last number of column 1
+c1c:	lda #0
+	adc z1
+	sta z1;8
+
+;-add last number of column 2
+	txa;A=z2
+c2c:	adc #0
+	tax;X=z2, 6
+	bcc fin;3/4 avg 3.5
+	iny;z3++
+
+;Y=z3, X=z2
+;9+6+4.5+8+6+3.5=37
+fin:	rts
+
+; Diagram of the additions
+;                 y1    y0
+;              x  x1    x0
+;                 --------
+;              x0y0h x0y0l
+; +      x0y1h x0y1l
+; +      x1y0h x1y0l
+; +x1y1h x1y1l
+; ------------------------
+;     z3    z2    z1    z0   
