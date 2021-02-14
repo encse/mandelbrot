@@ -4,9 +4,23 @@
 
     
     !to "mandelbrot.prg",cbm
+!set FIXPOINT = 0
+!if  FIXPOINT = 1   { 
+     *= $1500
+     !src "fixpoint.a"
+} else {
+    !src <cbm/c64/float.a>
+}
 
-    *= $2000
-    !src "fixpoint.a"
+
+!macro print @st {
+    lda #<@st
+    ldy #>@st
+    jsr $AB1E ; prints string located at YYAA
+    jsr $AAD7 ; prints new line
+}
+   ; 
+    
     
     ; * = $0801                               ; BASIC start address (#2049)
     ; !byte $0d,$08,$dc,$07,$9e,$20,$34,$39   ; BASIC loader to start at $c000...
@@ -45,7 +59,9 @@ store = $5c
     MAX_ITERATIONS = 16
 
     *= $1000
-    
+!if  FIXPOINT = 1   { 
+    jsr init16
+}
     jsr initGraphics
 
     lda #0
@@ -53,8 +69,12 @@ store = $5c
     sta y + 1
 .forY:
     ; c1 = c01
-    +ldAAYY mflpt_c01
-    +stAAYY mflpt_c1
+    +movYYAA mflpt_c01
+    jsr fac1_read_memYYAA
+
+
+    +movYYXX mflpt_c1
+    jsr fac1_to_memYYXX
     ; for x in 0..320:
     
     ; x = 0
@@ -62,12 +82,20 @@ store = $5c
     sta x
     sta x + 1
 .forX:
-    +ldAAYY mflpt_0
     ; z1 = z2 = z1^2 = z2^2 = 0
-    +stAAYY mflpt_z1
-    +stAAYY mflpt_z2
-    +stAAYY mflpt_z2Sq
-    +stAAYY mflpt_z1Sq
+    +movYYAA mflpt_0
+    jsr fac1_read_memYYAA
+    +movYYXX mflpt_z1
+    jsr fac1_to_memYYXX
+    
+    +movYYXX mflpt_z2
+    jsr fac1_to_memYYXX
+
+    +movYYXX mflpt_z2Sq
+    jsr fac1_to_memYYXX
+
+    +movYYXX mflpt_z1Sq
+    jsr fac1_to_memYYXX
 
     ; for i in 0..maxIterations:
     ; i = 0
@@ -75,9 +103,11 @@ store = $5c
     sta i
 .forI: 
     jsr updateZ
+    ; +dump_mflpt mflpt_z1
+    ; +dump_mflpt mflpt_z2
     jsr checkDivergence
+   
     bpl .nextX
-
 .nextI:
     ldx i
     dex
@@ -96,7 +126,7 @@ store = $5c
     sta y
 
 .nextX:
-
+   ; +print hello
     ldx x
     inx 
     stx x
@@ -139,6 +169,7 @@ updateZ:
     ; fac1 = z2^2
     +movYYAA mflpt_z2Sq
     jsr fac1_read_memYYAA
+
     ; fac1 = z1^2 - z2^2
     +movYYAA mflpt_z1Sq 
     jsr fac1_memYYAA_minus_fac1 
@@ -149,6 +180,8 @@ updateZ:
     ; tmp = fac1
     +movYYXX mflpt_tmp
     jsr fac1_to_memYYXX
+
+    ;+dump_mflpt mflpt_c1
 
     ; now compute z2 = 2 * z1 * z2 + c2
     ; fac1 = z1
@@ -192,7 +225,6 @@ updateZ:
     +movYYXX mflpt_z2Sq
     jsr fac1_to_memYYXX
 
-    jsr checkDivergence
     rts
 
 
@@ -205,6 +237,7 @@ checkDivergence:
     jsr fac1_add_memYYAA
     +movYYAA mflpt_4
     jsr fac1_compare_to_memYYAA
+ 
     rts
 
 setPoint:
@@ -316,7 +349,8 @@ initGraphics:
     rts
 
 
-
+hello: !text "--" 
+!by 0
 
 x:            !word 0
 y:            !word 0

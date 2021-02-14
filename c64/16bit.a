@@ -75,15 +75,15 @@ p_invsqr_hi = $91;2 bytes
 ;the inputs and outputs
 
 ;multiplier, 2 bytes;
-x0=$fc;
-x1=$fd;
+x0=$c795;
+x1=$c796;
 ;multiplier, 2 bytes
-y0=$85;
-y1=$86;
+y0=$c790;
+y1=$c791;
 
-mul16_sign = $80    ; temporal variable to store the sign of the mul 16 multiplication
-z0=$81
-z1=$82
+mul16_sign = $c780    ; temporal variable to store the sign of the mul 16 multiplication
+z0=$c781
+z1=$c782
 
 ;z2=$83 returned in X reg
 ;z3=$84 returned in Y reg
@@ -117,11 +117,6 @@ z1=$82
 }
 
 
-!macro print @st {
-    lda #<@st
-    ldy #>@st
-    jsr KernalPrintYYAA
-}
 
 !macro println @st {
     lda #<@st
@@ -142,7 +137,7 @@ neg16:
 ; x = x + y
 add16:
     clc
-    lda y0      ; high endian
+    lda y0
     adc x0
     sta x0
     lda y1
@@ -160,7 +155,7 @@ sub16:
 
 mul16:
     ldx #0              ; sign of the result
-    lda x1              ; high endian
+    lda x1             
     bpl .pos_x
     +twoscomplement x0
     inx                 ; switch sign
@@ -172,6 +167,13 @@ mul16:
 .pos_y:
     stx mul16_sign
     jsr umult16
+
+    ; shift down result with 8 bits
+    lda z1
+    sta z0
+    stx z1
+
+
     lda mul16_sign
     and #$01            ; check is sign is odd
     beq .q
@@ -190,7 +192,7 @@ printA:
     sta z1
     bpl .pos_z
     +twoscomplement z0
-    +print minus
+   ; +print minus
 .pos_z
     ldx z0
     lda z1
@@ -203,8 +205,7 @@ printA:
 minus: !text "-" 
 !by 0
 
-hello: !text "YOU FOUND 10 PIECES OF GOLD." 
-!by 0
+
 
 maketables:
 ;init zp square tables pointers

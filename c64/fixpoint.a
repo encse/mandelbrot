@@ -34,27 +34,6 @@ addr1 = $23 ; high
 	lda @addr + 1
 }
 
-!set fraction_bits = 10
-!macro mflpt @value {
-    !set @num = int(float(@value) * (1<<(fraction_bits-1)) + 0.5)
-    !if @num >0{
-        !if @num > 32767 {
-            !error "FLPT overflow"
-        }
-        !by 255 & @num
-        !by 255 & (@num >> 8)
-
-    } else if @num = 0 {
-        !by 0, 0
-    } else {
-        !if @num < -32768 {
-            !error "FLPT underflow"
-        }
-        !set @num = 0xffff + @num
-        !by 255 & @num
-        !by 255 & (@num >> 8)
-    }
-}
 
 
 !macro _mflpt @value {
@@ -102,7 +81,31 @@ addr1 = $23 ; high
 	}
 }
 
-q: +_mflpt 1.0 /  (1<<(fraction_bits-1))
+
+!set fraction_bits = 8
+fixed_to_float: +_mflpt 1.0 /  (1<<fraction_bits)
+
+!macro mflpt @value {
+    !set @num = int(float(@value) * (1<<fraction_bits) + 0.5)
+    !if @num >0{
+        !if @num > 32767 {
+            !error "FLPT overflow"
+        }
+        !by 255 & @num
+        !by 255 & (@num >> 8)
+
+    } else if @num = 0 {
+        !by 0, 0
+    } else {
+        !if @num < -32768 {
+            !error "FLPT underflow"
+        }
+        !set @num = 0xffff + @num
+        !by 255 & @num
+        !by 255 & (@num >> 8)
+    }
+}
+
 
 fac1_read_memYYAA: 
     sta addr0
@@ -115,6 +118,28 @@ fac1_read_memYYAA:
     sta x1
     rts
 
+fac2_read_memYYAA: 
+    sta addr0
+    sty addr1
+    ldy #0
+    lda (addr0), y
+    sta y0
+    iny
+    lda (addr0), y
+    sta y1
+    rts
+
+fac1_to_memYYXX:
+    stx addr0
+    sty addr1
+    ldy #0
+    lda x0
+    sta (addr0), y
+    iny
+    lda x1
+    sta (addr0), y
+    rts
+
 
 fac1_print:
 
@@ -122,7 +147,50 @@ fac1_print:
     lda x1
     
     jsr _fac1_read_signedAAYY
-    +movYYAA q
+    +movYYAA fixed_to_float
     jsr _fac1_times_memYYAA
     jsr _fac1_print
+    rts
+
+
+fac1_add_memYYAA:
+    sta addr0
+    sty addr1
+    ldy #0
+    lda (addr0), y
+    sta y0
+    iny
+    lda (addr0), y
+    sta y1
+
+    jsr add16
+    rts
+
+
+
+fac1_memYYAA_minus_fac1:
+    sta addr0
+    sty addr1
+    lda x0
+    sta y0
+    lda x1
+    sta y1
+    ldy #0
+    lda (addr0), y
+    sta x0
+    iny
+    lda (addr0), y
+    sta x1
+    jsr sub16
+    rts
+
+fac1_times_memYYAA:
+    jsr fac2_read_memYYAA
+    jsr mul16
+    rts
+
+fac1_compare_to_memYYAA:
+    jsr fac2_read_memYYAA
+    jsr sub16
+    lda x1
     rts
