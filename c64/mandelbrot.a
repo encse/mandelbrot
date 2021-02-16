@@ -4,7 +4,8 @@
 
     
     !to "mandelbrot.prg",cbm
-!set FIXPOINT = 0
+!set TRACE = 0
+!set FIXPOINT = 1
 !if  FIXPOINT = 1   { 
      *= $1500
      !src "fixpoint.a"
@@ -13,12 +14,6 @@
 }
 
 
-!macro print @st {
-    lda #<@st
-    ldy #>@st
-    jsr $AB1E ; prints string located at YYAA
-    jsr $AAD7 ; prints new line
-}
    ; 
     
     
@@ -32,9 +27,12 @@ loc = $5a
 store = $5c
 
 !macro dump_mflpt @addr {
-    +movYYAA @addr
-    jsr fac1_read_memYYAA
-    jsr fac1_print
+    ;+movYYAA @addr
+    ;jsr fac1_read_memYYAA
+    ;jsr fac1_print
+    +ldAAXX @addr
+    jsr _fac1_print_unsignedAAXX
+    jsr $AAD7 ; prints new line
 }
 
 ;   maxIterations = 4
@@ -62,6 +60,10 @@ store = $5c
 !if  FIXPOINT = 1   { 
     jsr init16
 }
+
+    ;jsr XXX
+
+
     jsr initGraphics
 
     lda #0
@@ -103,10 +105,13 @@ store = $5c
     sta i
 .forI: 
     jsr updateZ
-    ; +dump_mflpt mflpt_z1
-    ; +dump_mflpt mflpt_z2
+!if TRACE=1 {    
+    +dump_mflpt mflpt_z1
+    +dump_mflpt mflpt_z1Sq
+    +dump_mflpt mflpt_z2
+    +dump_mflpt mflpt_z2Sq
+}
     jsr checkDivergence
-   
     bpl .nextX
 .nextI:
     ldx i
@@ -126,7 +131,9 @@ store = $5c
     sta y
 
 .nextX:
-   ; +print hello
+!if TRACE=1 {  
+    +print st_nextX
+}
     ldx x
     inx 
     stx x
@@ -142,7 +149,9 @@ store = $5c
 
     jmp .forX
 .nextY:
-
+!if TRACE=1 {  
+    +print st_nextY
+}
     ldx y
     inx 
     stx y
@@ -349,7 +358,9 @@ initGraphics:
     rts
 
 
-hello: !text "--" 
+st_nextX: !text "nextX" 
+!by 0
+st_nextY: !text "nextY" 
 !by 0
 
 x:            !word 0
@@ -366,3 +377,13 @@ mflpt_z1Sq:   +mflpt  0.0
 mflpt_z2:     +mflpt  0.0
 mflpt_z2Sq:   +mflpt  0.0
 mflpt_tmp:    +mflpt  0.0
+
+
+mflpt_XXX:
+!by $69, $fe
+XXX:
+     +movYYAA mflpt_XXX
+    jsr fac1_read_memYYAA
+    +movYYAA mflpt_XXX
+    jsr fac1_times_memYYAA
+    jmp *

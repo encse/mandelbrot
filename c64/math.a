@@ -15,32 +15,28 @@
     !src "fixpoint.a"
     *= $1000
     jsr init16
-    +movYYAA mflptZero
-    jsr fac1_read_memYYAA
-    jsr fac1_print
 
-    +movYYAA mflptPi
-    jsr fac1_read_memYYAA
-    jsr fac1_print
-
-    +movYYAA mflptMinus2
-    jsr fac1_read_memYYAA
-    jsr fac1_print
-
-    +movYYAA mflptPi
-    jsr fac1_times_memYYAA
-    jsr fac1_print
+    +test_mul $97, $97
+    +test_mul $100, $100
+    +test_mul $100, $197
+    +test_mul $97, $100
+    +test_mul $100, $97
+    +test_mul $97, $97
+    +test_mul $197, $197
+   
+    ; jsr _fac1_read_signedAAYY
+    ; jsr _fac1_print
 
 
 
-    +movYYAA mflpt4
-    jsr fac1_read_memYYAA
-    +movYYAA mflptPi
-    jsr fac1_compare_to_memYYAA
 
-    bpl .nextX
-    +print hello
-.nextX
+    ; +movYYAA mflpt2
+    ; jsr fac1_read_memYYAA
+    ; jsr fac1_print
+
+    ; +movYYAA mflpt2
+    ; jsr fac1_times_memYYAA
+    ; jsr fac1_print
 
     rts
 
@@ -76,3 +72,5 @@ mflptMinus4: +mflpt    -4.0
     ; ; jsr printMulResult
    
     rts
+
+
