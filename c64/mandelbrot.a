@@ -54,21 +54,17 @@ store = $5c
 ;       c2 += dc
 
 
-    MAX_ITERATIONS = 16
+    MAX_ITERATIONS = 14
 
     *= $1000
 !if  FIXPOINT = 1   { 
     jsr init16
 }
 
-    ;jsr XXX
-
-
     jsr initGraphics
 
     lda #0
     sta y
-    sta y + 1
 .forY:
     ; c1 = c01
     +movYYAA mflpt_c01
@@ -82,7 +78,6 @@ store = $5c
     ; x = 0
     lda #0
     sta x
-    sta x + 1
 .forX:
     ; z1 = z2 = z1^2 = z2^2 = 0
     +movYYAA mflpt_0
@@ -121,12 +116,12 @@ store = $5c
 
     ; set x,y and also x, (200 - y) because of pattern symmetry
     jsr setPoint
-    lda #200
+    lda #172
     sbc y
     sta y
 
     jsr setPoint
-    lda #200
+    lda #172
     sbc y
     sta y
 
@@ -379,11 +374,3 @@ mflpt_z2Sq:   +mflpt  0.0
 mflpt_tmp:    +mflpt  0.0
 
 
-mflpt_XXX:
-!by $69, $fe
-XXX:
-     +movYYAA mflpt_XXX
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_XXX
-    jsr fac1_times_memYYAA
-    jmp *
