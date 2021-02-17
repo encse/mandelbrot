@@ -1,37 +1,3 @@
-; http://www.6502.org/tutorials/6502opcodes.html
-; https://sites.google.com/site/6502asembly/6502-instruction-set
-    
-
-;https://github.com/meonwax/acme/blob/master/docs/AddrModes.txt
-; Applying the byte extraction operators ("<" gives the low byte, ">"
-; gives the high byte and "^" gives the bank byte of a value) to any
-; value will clear the argument's Force Bits 2 and 3 and set Force
-; Bit 1 instead. So "lda <symbol" will use 8-bit addressing, regardless
-; of the symbol's Force Bits. Of course, you can change this by
-; postfixing the command again... :
-
-; tables of squares
-; sqr(x) = x ^ 2 / 4
-sqrlo           = $c000
-sqrhi           = $c200
-
-; negsqr(x) = (255 - x) ^ 2 / 4
-negsqrlo        = $c400
-negsqrhi        = $c600
-
-;multiplier, 2 bytes;
-x0=$8b;
-x1=$8c;
-;multiplier, 2 bytes
-y0=$8d;
-y1=$8e;
-
-z0=$61
-z1=$62
-z2=$63
-z3=$64
-mul16_sign = $65    ; temporal variable to store the sign of the mul 16 multiplication
-
 !macro fp @value {
     !set @num = int(float(@value) * 256 + 0.5)
     !if @num >0{
@@ -78,27 +44,25 @@ mul16_sign = $65    ; temporal variable to store the sign of the mul 16 multipli
     lda @dst+1
     sbc @src+1
     sta @dst+1
-
 }
 
 !macro fpmul @dst, @src {
     lda @src
-    sta x0
+    sta fixedpoint_x0
     lda @src + 1
-    sta x1
+    sta fixedpoint_x1
 
     lda @dst
-    sta y0
+    sta fixedpoint_y0
     lda @dst + 1
-    sta y1
+    sta fixedpoint_y1
 
     jsr mul16
 
-    lda x0
+    lda fixedpoint_x0
     sta @dst
-    lda x1
+    lda fixedpoint_x1
     sta @dst + 1
-
 }
 
 
@@ -122,7 +86,7 @@ fpinit:
         !by $c9   ; CMP #immediate - skip TYA and clear carry flag
 lb1:    tya
         adc #$00
-ml1:    sta sqrhi,x
+ml1:    sta fixedpoint_sqrhi,x
         tay
         cmp #$40
         txa
@@ -130,7 +94,7 @@ ml1:    sta sqrhi,x
 ml9:    adc #$00
         sta ml9+1
         inx
-ml0:    sta sqrlo,x
+ml0:    sta fixedpoint_sqrlo,x
         bne lb1
         inc ml0+2
         inc ml1+2
@@ -141,14 +105,14 @@ ml0:    sta sqrlo,x
         ldx #$00
         ldy #$ff
 .mt1:
-        lda sqrhi+1,x
-        sta negsqrhi+$100,x
-        lda sqrhi,x
-        sta negsqrhi,y
-        lda sqrlo+1,x
-        sta negsqrlo+$100,x
-        lda sqrlo,x
-        sta negsqrlo,y
+        lda fixedpoint_sqrhi+1,x
+        sta fixedpoint_negsqrhi+$100,x
+        lda fixedpoint_sqrhi,x
+        sta fixedpoint_negsqrhi,y
+        lda fixedpoint_sqrlo+1,x
+        sta fixedpoint_negsqrlo+$100,x
+        lda fixedpoint_sqrlo,x
+        sta fixedpoint_negsqrlo,y
         dey
         inx
         bne .mt1
@@ -157,34 +121,33 @@ ml0:    sta sqrlo,x
 
 mul16:
         ldx #0              ; sign of the result
-        lda x1             
+        lda fixedpoint_x1             
         bpl .pos_x
-        +twoscomplement x0
+        +twoscomplement fixedpoint_x0
         inx                 ; switch sign
 .pos_x:
-        lda y1
+        lda fixedpoint_y1
         bpl .pos_y
-        +twoscomplement y0
+        +twoscomplement fixedpoint_y0
         inx                 ; switch sign
 .pos_y:
-        stx mul16_sign
+        stx fixedpoint_mul16_sign
         jsr umult16
 
         ; shift down result with 8 bits
-        lda z1
-        sta x0
+        lda fixedpoint_z1
+        sta fixedpoint_x0
         ;stx x1
-        lda z2
-        sta x1
+        lda fixedpoint_z2
+        sta fixedpoint_x1
 
-        lda mul16_sign
+        lda fixedpoint_mul16_sign
         and #$01            ; check if sign is odd
         beq .q
-        +twoscomplement x0  ; product = -product
+        +twoscomplement fixedpoint_x0  ; product = -product
 .q
         rts
         
-
 umult16:
                 ; <T1 * <T2 = AAaa 
                 ; <T1 * >T2 = BBbb 
@@ -198,7 +161,7 @@ umult16:
                 ; ----------       
                 ;   PRODUCT!       
 
-                lda x0           
+                lda fixedpoint_x0           
                 sta sm1a+1       
                 sta sm3a+1       
                 sta sm5a+1       
@@ -208,7 +171,7 @@ umult16:
                 sta sm4a+1       
                 sta sm6a+1       
                 sta sm8a+1       
-                lda x1           
+                lda fixedpoint_x1           
                 sta sm1b+1       
                 sta sm3b+1       
                 sta sm5b+1       
@@ -220,62 +183,62 @@ umult16:
                 sta sm8b+1       
 
                 ; Perform <T1 * <T2 = AAaa
-                ldx y0           
+                ldx fixedpoint_y0           
                 sec              
-sm1a:           lda sqrlo,x      
-sm2a:           sbc negsqrlo,x   
-                sta z0           
-sm3a:           lda sqrhi,x      
-sm4a:           sbc negsqrhi,x   
+sm1a:           lda fixedpoint_sqrlo,x      
+sm2a:           sbc fixedpoint_negsqrlo,x   
+                sta fixedpoint_z0           
+sm3a:           lda fixedpoint_sqrhi,x      
+sm4a:           sbc fixedpoint_negsqrhi,x   
                 sta _AA + 1      
 
                 ; Perform >T1_hi * <T2 = CCcc
                 sec              
-sm1b:           lda sqrlo,x      
-sm2b:           sbc negsqrlo,x   
+sm1b:           lda fixedpoint_sqrlo,x      
+sm2b:           sbc fixedpoint_negsqrlo,x   
                 sta _cc + 1      
-sm3b:           lda sqrhi,x      
-sm4b:           sbc negsqrhi,x   
+sm3b:           lda fixedpoint_sqrhi,x      
+sm4b:           sbc fixedpoint_negsqrhi,x   
                 sta _CC + 1      
 
                 ; Perform <T1 * >T2 = BBbb
-                ldx y1                    
+                ldx fixedpoint_y1                    
                 sec                       
-sm5a:           lda sqrlo,x          
-sm6a:           sbc negsqrlo,x          
+sm5a:           lda fixedpoint_sqrlo,x          
+sm6a:           sbc fixedpoint_negsqrlo,x          
                 sta _bb + 1               
-sm7a:           lda sqrhi,x          
-sm8a:           sbc negsqrhi,x          
+sm7a:           lda fixedpoint_sqrhi,x          
+sm8a:           sbc fixedpoint_negsqrhi,x          
                 sta _BB + 1               
 
                 ; Perform >T1 * >T2 = DDdd
                 sec                  
-sm5b:           lda sqrlo,x          
-sm6b:           sbc negsqrlo,x       
+sm5b:           lda fixedpoint_sqrlo,x          
+sm6b:           sbc fixedpoint_negsqrlo,x       
                 sta _dd + 1          
-sm7b:           lda sqrhi,x          
-sm8b:           sbc negsqrhi,x       
-                sta z3               
+sm7b:           lda fixedpoint_sqrhi,x          
+sm8b:           sbc fixedpoint_negsqrhi,x       
+                sta fixedpoint_z3               
 
                 ; Add the separate multiplications together
                 clc                  
 _AA:            lda #0               
 _bb:            adc #0               
-                sta z1               
+                sta fixedpoint_z1               
 _BB:            lda #0               
 _CC:            adc #0               
-                sta z2               
+                sta fixedpoint_z2               
                 bcc qqq1             
-                inc z3               
+                inc fixedpoint_z3               
                 clc                  
 qqq1:                                
 _cc:            lda #0               
-                adc z1               
-                sta z1               
+                adc fixedpoint_z1               
+                sta fixedpoint_z1               
 _dd:            lda #0               
-                adc z2               
-                sta z2               
+                adc fixedpoint_z2               
+                sta fixedpoint_z2               
                 bcc qqq2             
-                inc z3               
+                inc fixedpoint_z3               
 qqq2:                                
                 rts

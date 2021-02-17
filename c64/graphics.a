@@ -1,24 +1,3 @@
-; http://www.6502.org/tutorials/6502opcodes.html
-; https://sites.google.com/site/6502asembly/6502-instruction-set
-    !src <6502/std.a>
-    
-    !to "y.prg",cbm
-    *= $1000
-    !byte float(3.14)
-    !byte $80
-main:
-    jsr initGraphics
-; draw something
-    ldx #0
-    lda #112
-.loop:
-    sta $2800, X
-    inx
-    bne .loop
-
-    rts 
-
-
 
 initGraphics:
     ; Toggle standard Bitmap Mode 
@@ -33,19 +12,19 @@ initGraphics:
     ; Set colors
     ldx #0
     lda #14
- setColor:
+.setColor:
     ; $0400-$07ff screen ram
     sta $400, X
     sta $500, X
     sta $600, X
     sta $700, X  
     inx
-    bne setColor
+    bne .setColor
 
     ; Clear screen
     ldx #0
     lda #0 
-clearScreen:
+.clearScreen:
     ;$2000 - $3fff: Bitmap RAM
     sta $2000, X
     sta $2100, X
@@ -80,7 +59,49 @@ clearScreen:
     sta $3e00, X
     sta $3f00, X
     inx
-    bne clearScreen
+    bne .clearScreen
     
     rts
 
+setPoint:
+    ; https://github.com/spoitras/High-resolution-plot-sub-routine/blob/master/plot.asm
+    ; address = base + int(y/8) * 320 + (y and 7) + int(x/8) * 8
+    lda	graphics_x
+    and	#7
+    tax
+    sec
+    lda	#0
+    sta graphics_loc
+.shift:	
+    ror
+    dex
+    bpl .shift
+    sta graphics_mask
+    lda graphics_x
+    and #$f8
+    sta graphics_store
+    lda graphics_y
+    lsr
+    lsr
+    lsr
+    sta graphics_loc+1
+    lsr
+    ror	graphics_loc
+    lsr
+    ror	graphics_loc
+    adc graphics_loc+1
+    sta graphics_loc+1
+    lda graphics_y
+    and #7
+    adc graphics_loc
+    adc graphics_store
+    sta graphics_loc
+    lda graphics_loc+1
+    adc graphics_x+1
+    adc graphics_bmpage
+    sta graphics_loc+1
+    ldy	#0
+    lda (graphics_loc),y
+    ora graphics_mask,y
+    sta (graphics_loc),y
+    rts

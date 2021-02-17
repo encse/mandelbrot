@@ -1,94 +1,77 @@
-; http://www.6502.org/tutorials/6502opcodes.html
-; https://sites.google.com/site/6502asembly/6502-instruction-set
-; https://github.com/meonwax/acme/tree/master/docs
 
-fp_z1   = $03
-fp_z1Sq = $05
-fp_z2   = $16
-fp_z2Sq = $18
-fp_tmp  = $1a
-    !to "mandelbrot.prg",cbm
 
-    *= $1500
-    !src "fixedpoint.a"
+MAX_ITERATIONS = 14
 
-    ; * = $0801                               ; BASIC start address (#2049)
-    ; !byte $0d,$08,$dc,$07,$9e,$20,$34,$39   ; BASIC loader to start at $c000...
-    ; !byte $31,$35,$32,$00,$00,$00           ; puts BASIC line 2012 SYS 49152
+mandelbrot_fp_4:      +fp  4.0
+mandelbrot_fp_0:      +fp  0.0
+mandelbrot_fp_dC:     +fp  0.01
+mandelbrot_fp_c01:    +fp -2.0
+mandelbrot_fp_c1:     +fp  0.0
+mandelbrot_fp_c2:     +fp -1.0
 
-    bmpage = $ff
-    mask = $59
-    loc = $5a
-    store = $5c
+drawMandelbrot:
 
-    MAX_ITERATIONS = 14
-
-    *= $1000
     jsr fpinit
     jsr initGraphics
 
     lda #0
-    sta y
-.forY:
-    ; c1 = c01
-    +fpmov fp_c1, fp_c01
-    ; for x in 0..320:
+    sta graphics_y
+    sta graphics_y + 1
     
-    ; x = 0
+.forY:
+    +fpmov mandelbrot_fp_c1, mandelbrot_fp_c01
     lda #0
-    sta x
-.forX:
-    ; z1 = z2 = z1^2 = z2^2 = 0
-    +fpmov fp_z1, fp_0
-    +fpmov fp_z2, fp_0
-    +fpmov fp_z1Sq, fp_0
-    +fpmov fp_z2Sq, fp_0
+    sta graphics_x
+    sta graphics_x + 1
 
-    ; for i in 0..maxIterations:
-    ; i = 0
+.forX:
+    +fpmov mandelbrot_fp_z1, mandelbrot_fp_0
+    +fpmov mandelbrot_fp_z2, mandelbrot_fp_0
+    +fpmov mandelbrot_fp_z1Sq, mandelbrot_fp_0
+    +fpmov mandelbrot_fp_z2Sq, mandelbrot_fp_0
+
     lda #MAX_ITERATIONS
-    sta i
+    sta mandelbrot_i
+
 .forI: 
     jsr updateZ
     bpl .nextX
-.nextI:
-    ldx i
+    ldx mandelbrot_i
     dex
-    stx i
+    stx mandelbrot_i
     bne .forI
 
     ; set x,y and also x, (200 - y) because of pattern symmetry
     jsr setPoint
     lda #172
-    sbc y
-    sta y
+    sbc graphics_y
+    sta graphics_y
 
     jsr setPoint
     lda #172
-    sbc y
-    sta y
+    sbc graphics_y
+    sta graphics_y
 
 .nextX:
-    ldx x
+    ldx graphics_x
     inx 
-    stx x
+    stx graphics_x
     beq .nextY
 
-    +fpadd fp_c1, fp_dC
+    +fpadd mandelbrot_fp_c1, mandelbrot_fp_dC
 
     jmp .forX
+
 .nextY:
-    ldx y
+    ldx graphics_y
     inx 
-    stx y
+    stx graphics_y
     beq .done
 
-     ; c2 += dc
-    +fpadd fp_c2, fp_dC
+    +fpadd mandelbrot_fp_c2, mandelbrot_fp_dC
 
     jmp .forY
 .done:
-
     rts
 
 ; compute z = z^2 + c, update z^2
@@ -96,148 +79,26 @@ fp_tmp  = $1a
 updateZ:
     ; tmp = z1 * z1 - z2 * z2 + c1 
     
-    +fpmov fp_tmp, fp_c1
-    +fpadd fp_tmp, fp_z1Sq
-    +fpsub fp_tmp, fp_z2Sq
+    +fpmov mandelbrot_fp_tmp, mandelbrot_fp_c1
+    +fpadd mandelbrot_fp_tmp, mandelbrot_fp_z1Sq
+    +fpsub mandelbrot_fp_tmp, mandelbrot_fp_z2Sq
 
     ; now compute z2 = 2 * z1 * z2 + c2
-    +fpmul fp_z2, fp_z1
-    +fpadd fp_z2, fp_z2 ;*2
-    +fpadd fp_z2, fp_c2
+    +fpmul mandelbrot_fp_z2, mandelbrot_fp_z1
+    +fpadd mandelbrot_fp_z2, mandelbrot_fp_z2 ;*2
+    +fpadd mandelbrot_fp_z2, mandelbrot_fp_c2
 
     ; z1 = tmp
-    +fpmov fp_z1, fp_tmp
+    +fpmov mandelbrot_fp_z1, mandelbrot_fp_tmp
 
     ; update z1^2 and z2^2
-    +fpmov fp_z1Sq, fp_z1
-    +fpmul fp_z1Sq, fp_z1Sq
-    +fpmov fp_z2Sq, fp_z2
-    +fpmul fp_z2Sq, fp_z2Sq
+    +fpmov mandelbrot_fp_z1Sq, mandelbrot_fp_z1
+    +fpmul mandelbrot_fp_z1Sq, mandelbrot_fp_z1Sq
+    +fpmov mandelbrot_fp_z2Sq, mandelbrot_fp_z2
+    +fpmul mandelbrot_fp_z2Sq, mandelbrot_fp_z2Sq
 
     ; fac1 = z1 * z1 + z2 * z2
-    +fpmov fp_tmp, fp_z1Sq
-    +fpadd fp_tmp, fp_z2Sq
-    +fpsub fp_tmp, fp_4
+    +fpmov mandelbrot_fp_tmp, mandelbrot_fp_z1Sq
+    +fpadd mandelbrot_fp_tmp, mandelbrot_fp_z2Sq
+    +fpsub mandelbrot_fp_tmp, mandelbrot_fp_4
     rts
-
-
-setPoint:
-    ; https://github.com/spoitras/High-resolution-plot-sub-routine/blob/master/plot.asm
-    ; address = base + int(y/8) * 320 + (y and 7) + int(x/8) * 8
-    lda	x
-    and	#7
-    tax
-    sec
-    lda	#0
-    sta loc
-.shift:	
-    ror
-    dex
-    bpl .shift
-    sta mask
-    lda x
-    and #$f8
-    sta store
-    lda y
-    lsr
-    lsr
-    lsr
-    sta loc+1
-    lsr
-    ror	loc
-    lsr
-    ror	loc
-    adc loc+1
-    sta loc+1
-    lda y
-    and #7
-    adc loc
-    adc store
-    sta loc
-    lda loc+1
-    adc x+1
-    adc bmpage
-    sta loc+1
-    ldy	#0
-    lda (loc),y
-    ora mask,y
-    sta (loc),y
-    rts
-
-
-initGraphics:
-    ; Toggle standard Bitmap Mode 
-    lda $d018 ; 53272
-    ora #8
-    sta $d018
-
-    lda $d011 ; 53265
-    ora #32
-    sta $d011
-
-    ; Set colors
-    ldx #0
-    lda #14
-.setColor:
-    ; $0400-$07ff screen ram
-    sta $400, X
-    sta $500, X
-    sta $600, X
-    sta $700, X  
-    inx
-    bne .setColor
-
-    ; Clear screen
-    ldx #0
-    lda #0 
-.clearScreen:
-    ;$2000 - $3fff: Bitmap RAM
-    sta $2000, X
-    sta $2100, X
-    sta $2200, X
-    sta $2300, X
-    sta $2400, X
-    sta $2500, X
-    sta $2600, X
-    sta $2700, X
-    sta $2800, X
-    sta $2900, X
-    sta $2a00, X
-    sta $2b00, X
-    sta $2c00, X
-    sta $2d00, X
-    sta $2e00, X
-    sta $2f00, X
-    sta $3000, X
-    sta $3100, X
-    sta $3200, X
-    sta $3300, X
-    sta $3400, X
-    sta $3500, X
-    sta $3600, X
-    sta $3700, X
-    sta $3800, X
-    sta $3900, X
-    sta $3a00, X
-    sta $3b00, X
-    sta $3c00, X
-    sta $3d00, X
-    sta $3e00, X
-    sta $3f00, X
-    inx
-    bne .clearScreen
-    
-    rts
-
-fp_4:      +fp  4.0
-fp_0:      +fp  0.0
-fp_dC:     +fp  0.01
-fp_c01:    +fp -2.0
-fp_c1:     +fp  0.0
-fp_c2:     +fp -1.0
-
-x:            !word 0
-y:            !word 0
-i:            !word 0
-
-
