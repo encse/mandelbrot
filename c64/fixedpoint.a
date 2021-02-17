@@ -1,0 +1,283 @@
+; http://www.6502.org/tutorials/6502opcodes.html
+; https://sites.google.com/site/6502asembly/6502-instruction-set
+    
+
+;https://github.com/meonwax/acme/blob/master/docs/AddrModes.txt
+; Applying the byte extraction operators ("<" gives the low byte, ">"
+; gives the high byte and "^" gives the bank byte of a value) to any
+; value will clear the argument's Force Bits 2 and 3 and set Force
+; Bit 1 instead. So "lda <symbol" will use 8-bit addressing, regardless
+; of the symbol's Force Bits. Of course, you can change this by
+; postfixing the command again... :
+
+; tables of squares
+; sqr(x) = x ^ 2 / 4
+sqrlo           = $c000
+sqrhi           = $c200
+
+; negsqr(x) = (255 - x) ^ 2 / 4
+negsqrlo        = $c400
+negsqrhi        = $c600
+
+;the insputs and outputs
+
+;multiplier, 2 bytes;
+x0=$c895;
+x1=$c896;
+;multiplier, 2 bytes
+y0=$c890;
+y1=$c891;
+
+mul16_sign = $c880    ; temporal variable to store the sign of the mul 16 multiplication
+z0=$c881
+z1=$c882
+z2=$c883
+z3=$c884
+
+!macro fp @value {
+    !set @num = int(float(@value) * 256 + 0.5)
+    !if @num >0{
+        !if @num > 32767 {
+            !error "FLPT overflow"
+        }
+        !by 255 & @num
+        !by 255 & (@num >> 8)
+
+    } else if @num = 0 {
+        !by 0, 0
+    } else {
+        !if @num < -32768 {
+            !error "FLPT underflow"
+        }
+        !set @num = 0xffff + @num
+        !by 255 & @num
+        !by 255 & (@num >> 8)
+    }
+}
+
+!macro fpmov @dst, @src {
+    lda @src
+    sta @dst
+    lda @src + 1
+    sta @dst + 1
+}
+
+!macro fpadd @dst, @src {
+    clc
+    lda @src
+    adc @dst
+    sta @dst
+    lda @src+1
+    adc @dst+1
+    sta @dst+1
+}
+
+!macro fpsub @dst, @src {
+    sec
+    lda @dst
+    sbc @src
+    sta @dst
+    lda @dst+1
+    sbc @src+1
+    sta @dst+1
+
+}
+
+!macro fpmul @dst, @src {
+    lda @src
+    sta x0
+    lda @src + 1
+    sta x1
+
+    lda @dst
+    sta y0
+    lda @dst + 1
+    sta y1
+
+    jsr mul16
+
+    lda x0
+    sta @dst
+    lda x1
+    sta @dst + 1
+
+}
+
+
+!macro twoscomplement @val {
+        clc
+        lda @val
+        eor #$ff
+        adc #$01
+        sta @val
+        
+        lda @val+1
+        eor #$ff
+        adc #$00
+        sta @val+1
+}
+
+
+fpinit:
+        ldx #$00
+        txa
+        !by $c9   ; CMP #immediate - skip TYA and clear carry flag
+lb1:    tya
+        adc #$00
+ml1:    sta sqrhi,x
+        tay
+        cmp #$40
+        txa
+        ror
+ml9:    adc #$00
+        sta ml9+1
+        inx
+ml0:    sta sqrlo,x
+        bne lb1
+        inc ml0+2
+        inc ml1+2
+        clc
+        iny
+        bne lb1
+
+        ldx #$00
+        ldy #$ff
+.mt1:
+        lda sqrhi+1,x
+        sta negsqrhi+$100,x
+        lda sqrhi,x
+        sta negsqrhi,y
+        lda sqrlo+1,x
+        sta negsqrlo+$100,x
+        lda sqrlo,x
+        sta negsqrlo,y
+        dey
+        inx
+        bne .mt1
+        rts
+
+
+mul16:
+        ldx #0              ; sign of the result
+        lda x1             
+        bpl .pos_x
+        +twoscomplement x0
+        inx                 ; switch sign
+.pos_x:
+        lda y1
+        bpl .pos_y
+        +twoscomplement y0
+        inx                 ; switch sign
+.pos_y:
+        stx mul16_sign
+        jsr umult16
+
+        ; shift down result with 8 bits
+        lda z1
+        sta x0
+        ;stx x1
+        lda z2
+        sta x1
+
+        lda mul16_sign
+        and #$01            ; check if sign is odd
+        beq .q
+        +twoscomplement x0  ; product = -product
+.q
+        rts
+        
+
+umult16:
+                ; <T1 * <T2 = AAaa 
+                ; <T1 * >T2 = BBbb 
+                ; >T1 * <T2 = CCcc 
+                ; >T1 * >T2 = DDdd 
+                ;                  
+                ;       AAaa       
+                ;     BBbb         
+                ;     CCcc         
+                ; + DDdd           
+                ; ----------       
+                ;   PRODUCT!       
+
+                lda x0           
+                sta sm1a+1       
+                sta sm3a+1       
+                sta sm5a+1       
+                sta sm7a+1       
+                eor #$ff         
+                sta sm2a+1       
+                sta sm4a+1       
+                sta sm6a+1       
+                sta sm8a+1       
+                lda x1           
+                sta sm1b+1       
+                sta sm3b+1       
+                sta sm5b+1       
+                sta sm7b+1       
+                eor #$ff         
+                sta sm2b+1       
+                sta sm4b+1       
+                sta sm6b+1       
+                sta sm8b+1       
+
+                ; Perform <T1 * <T2 = AAaa
+                ldx y0           
+                sec              
+sm1a:           lda sqrlo,x      
+sm2a:           sbc negsqrlo,x   
+                sta z0           
+sm3a:           lda sqrhi,x      
+sm4a:           sbc negsqrhi,x   
+                sta _AA + 1      
+
+                ; Perform >T1_hi * <T2 = CCcc
+                sec              
+sm1b:           lda sqrlo,x      
+sm2b:           sbc negsqrlo,x   
+                sta _cc + 1      
+sm3b:           lda sqrhi,x      
+sm4b:           sbc negsqrhi,x   
+                sta _CC + 1      
+
+                ; Perform <T1 * >T2 = BBbb
+                ldx y1                    
+                sec                       
+sm5a:           lda sqrlo,x          
+sm6a:           sbc negsqrlo,x          
+                sta _bb + 1               
+sm7a:           lda sqrhi,x          
+sm8a:           sbc negsqrhi,x          
+                sta _BB + 1               
+
+                ; Perform >T1 * >T2 = DDdd
+                sec                  
+sm5b:           lda sqrlo,x          
+sm6b:           sbc negsqrlo,x       
+                sta _dd + 1          
+sm7b:           lda sqrhi,x          
+sm8b:           sbc negsqrhi,x       
+                sta z3               
+
+                ; Add the separate multiplications together
+                clc                  
+_AA:            lda #0               
+_bb:            adc #0               
+                sta z1               
+_BB:            lda #0               
+_CC:            adc #0               
+                sta z2               
+                bcc qqq1             
+                inc z3               
+                clc                  
+qqq1:                                
+_cc:            lda #0               
+                adc z1               
+                sta z1               
+_dd:            lda #0               
+                adc z2               
+                sta z2               
+                bcc qqq2             
+                inc z3               
+qqq2:                                
+                rts

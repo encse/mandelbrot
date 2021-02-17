@@ -2,132 +2,31 @@
 ; https://sites.google.com/site/6502asembly/6502-instruction-set
 ; https://github.com/meonwax/acme/tree/master/docs
 
-    
     !to "mandelbrot.prg",cbm
-     *= $1500
-     !src "fixpoint.a"
-    
+
+    *= $1500
+    !src "fixedpoint.a"
+
     ; * = $0801                               ; BASIC start address (#2049)
     ; !byte $0d,$08,$dc,$07,$9e,$20,$34,$39   ; BASIC loader to start at $c000...
     ; !byte $31,$35,$32,$00,$00,$00           ; puts BASIC line 2012 SYS 49152
 
-bmpage = $ff
-mask = $59
-loc = $5a
-store = $5c
-
-!macro fpmov @dst, @src {
-    lda @src
-    sta @dst
-    lda @src + 1
-    sta @dst + 1
-}
-
-!macro fpadd @dst, @src {
-    clc
-    lda @src
-    adc @dst
-    sta @dst
-    lda @src+1
-    adc @dst+1
-    sta @dst+1
-}
-
-!macro fpsub @dst, @src {
-    sec
-    lda @dst
-    sbc @src
-    sta @dst
-    lda @dst+1
-    sbc @src+1
-    sta @dst+1
-
-}
-
-!macro fpmul @dst, @src {
-    lda @src
-    sta x0
-    lda @src + 1
-    sta x1
-
-    lda @dst
-    sta y0
-    lda @dst + 1
-    sta y1
-
-    jsr mul16
-
-    lda x0
-    sta @dst
-    lda x1
-    sta @dst + 1
-
-}
-
-
-mul16:
-        ldx #0              ; sign of the result
-        lda x1             
-        bpl .pos_x
-        +twoscomplement x0
-        inx                 ; switch sign
-.pos_x:
-        lda y1
-        bpl .pos_y
-        +twoscomplement y0
-        inx                 ; switch sign
-.pos_y:
-        stx mul16_sign
-        jsr umult16
-
-        ; shift down result with 8 bits
-        lda z1
-        sta x0
-        ;stx x1
-        lda z2
-        sta x1
-
-        lda mul16_sign
-        and #$01            ; check if sign is odd
-        beq .q
-        +twoscomplement x0  ; product = -product
-.q
-        rts
-        
-
-;   maxIterations = 4
-;   dc = 0.01
-;   c2 = -1.0
-;   for y in 0..200:
-;       c1 = -2.0
-;       for x in 0..320:
-;           z1 = 0
-;           z2 = 0
-;           for i in 0..maxIterations:
-;               tmp = z1 * z1 - z2 * z2 + c1
-;               z2 = 2 * z1 * z2 + c2
-;               z1 = tmp
-;               if (z1 * z1 + z2 * z2 >= 4):
-;                   setColor(x,y,i)
-;                   break
-;           c1 += dc
-;       c2 += dc
-
+    bmpage = $ff
+    mask = $59
+    loc = $5a
+    store = $5c
 
     MAX_ITERATIONS = 14
 
     *= $1000
-!if  FIXPOINT = 1   { 
-    jsr init16
-}
-
+    jsr fpinit
     jsr initGraphics
 
     lda #0
     sta y
 .forY:
     ; c1 = c01
-    +fpmov mflpt_c1, mflpt_c01
+    +fpmov fp_c1, fp_c01
     ; for x in 0..320:
     
     ; x = 0
@@ -135,10 +34,10 @@ mul16:
     sta x
 .forX:
     ; z1 = z2 = z1^2 = z2^2 = 0
-    +fpmov mflpt_z1, mflpt_0
-    +fpmov mflpt_z2, mflpt_0
-    +fpmov mflpt_z1Sq, mflpt_0
-    +fpmov mflpt_z2Sq, mflpt_0
+    +fpmov fp_z1, fp_0
+    +fpmov fp_z2, fp_0
+    +fpmov fp_z1Sq, fp_0
+    +fpmov fp_z2Sq, fp_0
 
     ; for i in 0..maxIterations:
     ; i = 0
@@ -170,7 +69,7 @@ mul16:
     stx x
     beq .nextY
 
-    +fpadd mflpt_c1, mflpt_dC
+    +fpadd fp_c1, fp_dC
 
     jmp .forX
 .nextY:
@@ -180,7 +79,7 @@ mul16:
     beq .done
 
      ; c2 += dc
-    +fpadd mflpt_c2, mflpt_dC
+    +fpadd fp_c2, fp_dC
 
     jmp .forY
 .done:
@@ -192,28 +91,28 @@ mul16:
 updateZ:
     ; tmp = z1 * z1 - z2 * z2 + c1 
     
-    +fpmov mflpt_tmp, mflpt_c1
-    +fpadd mflpt_tmp, mflpt_z1Sq
-    +fpsub mflpt_tmp, mflpt_z2Sq
+    +fpmov fp_tmp, fp_c1
+    +fpadd fp_tmp, fp_z1Sq
+    +fpsub fp_tmp, fp_z2Sq
 
     ; now compute z2 = 2 * z1 * z2 + c2
-    +fpmul mflpt_z2, mflpt_z1
-    +fpadd mflpt_z2, mflpt_z2 ;*2
-    +fpadd mflpt_z2, mflpt_c2
+    +fpmul fp_z2, fp_z1
+    +fpadd fp_z2, fp_z2 ;*2
+    +fpadd fp_z2, fp_c2
 
     ; z1 = tmp
-    +fpmov mflpt_z1, mflpt_tmp
+    +fpmov fp_z1, fp_tmp
 
     ; update z1^2 and z2^2
-    +fpmov mflpt_z1Sq, mflpt_z1
-    +fpmul mflpt_z1Sq, mflpt_z1Sq
-    +fpmov mflpt_z2Sq, mflpt_z2
-    +fpmul mflpt_z2Sq, mflpt_z2Sq
+    +fpmov fp_z1Sq, fp_z1
+    +fpmul fp_z1Sq, fp_z1Sq
+    +fpmov fp_z2Sq, fp_z2
+    +fpmul fp_z2Sq, fp_z2Sq
 
     ; fac1 = z1 * z1 + z2 * z2
-    +fpmov mflpt_tmp, mflpt_z1Sq
-    +fpadd mflpt_tmp, mflpt_z2Sq
-    +fpsub mflpt_tmp, mflpt_4
+    +fpmov fp_tmp, fp_z1Sq
+    +fpadd fp_tmp, fp_z2Sq
+    +fpsub fp_tmp, fp_4
     rts
 
 
@@ -325,25 +224,19 @@ initGraphics:
     
     rts
 
-
-st_nextX: !text "nextX" 
-!by 0
-st_nextY: !text "nextY" 
-!by 0
-
 x:            !word 0
 y:            !word 0
 i:            !word 0
-mflpt_4:      +mflpt  4.0
-mflpt_0:      +mflpt  0.0
-mflpt_dC:     +mflpt  0.01
-mflpt_c01:    +mflpt -2.0
-mflpt_c1:     +mflpt  0.0
-mflpt_c2:     +mflpt -1.0
-mflpt_z1:     +mflpt  0.0
-mflpt_z1Sq:   +mflpt  0.0
-mflpt_z2:     +mflpt  0.0
-mflpt_z2Sq:   +mflpt  0.0
-mflpt_tmp:    +mflpt  0.0
+fp_4:      +fp  4.0
+fp_0:      +fp  0.0
+fp_dC:     +fp  0.01
+fp_c01:    +fp -2.0
+fp_c1:     +fp  0.0
+fp_c2:     +fp -1.0
+fp_z1:     +fp  0.0
+fp_z1Sq:   +fp  0.0
+fp_z2:     +fp  0.0
+fp_z2Sq:   +fp  0.0
+fp_tmp:    +fp  0.0
 
 
