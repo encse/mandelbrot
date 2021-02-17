@@ -4,12 +4,8 @@
 
     
     !to "mandelbrot.prg",cbm
-!set FIXPOINT = 1
      *= $1500
      !src "fixpoint.a"
-
-   ; 
-    
     
     ; * = $0801                               ; BASIC start address (#2049)
     ; !byte $0d,$08,$dc,$07,$9e,$20,$34,$39   ; BASIC loader to start at $c000...
@@ -192,37 +188,18 @@ mul16:
     rts
 
 ; compute z = z^2 + c, update z^2
-
+; N is set if |z| > 4
 updateZ:
-    ; compute tmp = z1 * z1 - z2 * z2 + c1 
+    ; tmp = z1 * z1 - z2 * z2 + c1 
     
     +fpmov mflpt_tmp, mflpt_c1
     +fpadd mflpt_tmp, mflpt_z1Sq
     +fpsub mflpt_tmp, mflpt_z2Sq
 
-    ;+dump_mflpt mflpt_c1
-
     ; now compute z2 = 2 * z1 * z2 + c2
-    ; fac1 = z1
-
-    +movYYAA mflpt_z1
-    jsr fac1_read_memYYAA
-
-    ; fac1 = 2 * z1
-    +movYYAA mflpt_z1
-    jsr fac1_add_memYYAA
-
-    ; fac1 = 2 * z1 * z2
-    +movYYAA mflpt_z2
-    jsr fac1_times_memYYAA
-
-    ; fac1 = 2 * z1 * z2 + c2
-    +movYYAA mflpt_c2
-    jsr fac1_add_memYYAA
-
-    ; z2 = 2 * z1 * z2 + c2
-    +movYYXX mflpt_z2
-    jsr fac1_to_memYYXX
+    +fpmul mflpt_z2, mflpt_z1
+    +fpadd mflpt_z2, mflpt_z2 ;*2
+    +fpadd mflpt_z2, mflpt_c2
 
     ; z1 = tmp
     +fpmov mflpt_z1, mflpt_tmp
@@ -238,6 +215,7 @@ updateZ:
     +fpadd mflpt_tmp, mflpt_z2Sq
     +fpsub mflpt_tmp, mflpt_4
     rts
+
 
 setPoint:
     ; https://github.com/spoitras/High-resolution-plot-sub-routine/blob/master/plot.asm
