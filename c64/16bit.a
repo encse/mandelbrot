@@ -199,34 +199,7 @@ sub16:
         rts
 
 
-mul16:
-        ldx #0              ; sign of the result
-        lda x1             
-        bpl .pos_x
-        +twoscomplement x0
-        inx                 ; switch sign
-.pos_x:
-        lda y1
-        bpl .pos_y
-        +twoscomplement y0
-        inx                 ; switch sign
-.pos_y:
-        stx mul16_sign
-        jsr umult16
 
-        ; shift down result with 8 bits
-        lda z1
-        sta x0
-        ;stx x1
-        lda z2
-        sta x1
-
-        lda mul16_sign
-        and #$01            ; check if sign is odd
-        beq .q
-        +twoscomplement x0  ; product = -product
-.q
-        rts
 
 printA:
         lda x0

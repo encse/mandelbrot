@@ -4,15 +4,9 @@
 
     
     !to "mandelbrot.prg",cbm
-!set TRACE = 0
 !set FIXPOINT = 1
-!if  FIXPOINT = 1   { 
      *= $1500
      !src "fixpoint.a"
-} else {
-    !src <cbm/c64/float.a>
-}
-
 
    ; 
     
@@ -26,14 +20,84 @@ mask = $59
 loc = $5a
 store = $5c
 
-!macro dump_mflpt @addr {
-    ;+movYYAA @addr
-    ;jsr fac1_read_memYYAA
-    ;jsr fac1_print
-    +ldAAXX @addr
-    jsr _fac1_print_unsignedAAXX
-    jsr $AAD7 ; prints new line
+!macro fpmov @dst, @src {
+    lda @src
+    sta @dst
+    lda @src + 1
+    sta @dst + 1
 }
+
+!macro fpadd @dst, @src {
+    clc
+    lda @src
+    adc @dst
+    sta @dst
+    lda @src+1
+    adc @dst+1
+    sta @dst+1
+}
+
+!macro fpsub @dst, @src {
+    sec
+    lda @dst
+    sbc @src
+    sta @dst
+    lda @dst+1
+    sbc @src+1
+    sta @dst+1
+
+}
+
+!macro fpmul @dst, @src {
+    lda @src
+    sta x0
+    lda @src + 1
+    sta x1
+
+    lda @dst
+    sta y0
+    lda @dst + 1
+    sta y1
+
+    jsr mul16
+
+    lda x0
+    sta @dst
+    lda x1
+    sta @dst + 1
+
+}
+
+
+mul16:
+        ldx #0              ; sign of the result
+        lda x1             
+        bpl .pos_x
+        +twoscomplement x0
+        inx                 ; switch sign
+.pos_x:
+        lda y1
+        bpl .pos_y
+        +twoscomplement y0
+        inx                 ; switch sign
+.pos_y:
+        stx mul16_sign
+        jsr umult16
+
+        ; shift down result with 8 bits
+        lda z1
+        sta x0
+        ;stx x1
+        lda z2
+        sta x1
+
+        lda mul16_sign
+        and #$01            ; check if sign is odd
+        beq .q
+        +twoscomplement x0  ; product = -product
+.q
+        rts
+        
 
 ;   maxIterations = 4
 ;   dc = 0.01
@@ -67,12 +131,7 @@ store = $5c
     sta y
 .forY:
     ; c1 = c01
-    +movYYAA mflpt_c01
-    jsr fac1_read_memYYAA
-
-
-    +movYYXX mflpt_c1
-    jsr fac1_to_memYYXX
+    +fpmov mflpt_c1, mflpt_c01
     ; for x in 0..320:
     
     ; x = 0
@@ -80,19 +139,10 @@ store = $5c
     sta x
 .forX:
     ; z1 = z2 = z1^2 = z2^2 = 0
-    +movYYAA mflpt_0
-    jsr fac1_read_memYYAA
-    +movYYXX mflpt_z1
-    jsr fac1_to_memYYXX
-    
-    +movYYXX mflpt_z2
-    jsr fac1_to_memYYXX
-
-    +movYYXX mflpt_z2Sq
-    jsr fac1_to_memYYXX
-
-    +movYYXX mflpt_z1Sq
-    jsr fac1_to_memYYXX
+    +fpmov mflpt_z1, mflpt_0
+    +fpmov mflpt_z2, mflpt_0
+    +fpmov mflpt_z1Sq, mflpt_0
+    +fpmov mflpt_z2Sq, mflpt_0
 
     ; for i in 0..maxIterations:
     ; i = 0
@@ -100,13 +150,6 @@ store = $5c
     sta i
 .forI: 
     jsr updateZ
-!if TRACE=1 {    
-    +dump_mflpt mflpt_z1
-    +dump_mflpt mflpt_z1Sq
-    +dump_mflpt mflpt_z2
-    +dump_mflpt mflpt_z2Sq
-}
-    jsr checkDivergence
     bpl .nextX
 .nextI:
     ldx i
@@ -126,39 +169,22 @@ store = $5c
     sta y
 
 .nextX:
-!if TRACE=1 {  
-    +print st_nextX
-}
     ldx x
     inx 
     stx x
     beq .nextY
 
-    ; c1 += dc
-    +movYYAA mflpt_c1
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_dC
-    jsr fac1_add_memYYAA
-    +movYYXX mflpt_c1
-    jsr fac1_to_memYYXX
+    +fpadd mflpt_c1, mflpt_dC
 
     jmp .forX
 .nextY:
-!if TRACE=1 {  
-    +print st_nextY
-}
     ldx y
     inx 
     stx y
     beq .done
 
      ; c2 += dc
-    +movYYAA mflpt_c2
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_dC
-    jsr fac1_add_memYYAA
-    +movYYXX mflpt_c2
-    jsr fac1_to_memYYXX
+    +fpadd mflpt_c2, mflpt_dC
 
     jmp .forY
 .done:
@@ -170,25 +196,15 @@ store = $5c
 updateZ:
     ; compute tmp = z1 * z1 - z2 * z2 + c1 
     
-    ; fac1 = z2^2
-    +movYYAA mflpt_z2Sq
-    jsr fac1_read_memYYAA
-
-    ; fac1 = z1^2 - z2^2
-    +movYYAA mflpt_z1Sq 
-    jsr fac1_memYYAA_minus_fac1 
-    ; fac1 += c1
-    +movYYAA mflpt_c1
-    jsr fac1_add_memYYAA
-
-    ; tmp = fac1
-    +movYYXX mflpt_tmp
-    jsr fac1_to_memYYXX
+    +fpmov mflpt_tmp, mflpt_c1
+    +fpadd mflpt_tmp, mflpt_z1Sq
+    +fpsub mflpt_tmp, mflpt_z2Sq
 
     ;+dump_mflpt mflpt_c1
 
     ; now compute z2 = 2 * z1 * z2 + c2
     ; fac1 = z1
+
     +movYYAA mflpt_z1
     jsr fac1_read_memYYAA
 
@@ -209,39 +225,18 @@ updateZ:
     jsr fac1_to_memYYXX
 
     ; z1 = tmp
-    +movYYAA mflpt_tmp
-    jsr fac1_read_memYYAA
-    +movYYXX mflpt_z1
-    jsr fac1_to_memYYXX
+    +fpmov mflpt_z1, mflpt_tmp
 
     ; update z1^2 and z2^2
-    +movYYAA mflpt_z1
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_z1
-    jsr fac1_times_memYYAA
-    +movYYXX mflpt_z1Sq
-    jsr fac1_to_memYYXX
+    +fpmov mflpt_z1Sq, mflpt_z1
+    +fpmul mflpt_z1Sq, mflpt_z1Sq
+    +fpmov mflpt_z2Sq, mflpt_z2
+    +fpmul mflpt_z2Sq, mflpt_z2Sq
 
-    +movYYAA mflpt_z2
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_z2
-    jsr fac1_times_memYYAA
-    +movYYXX mflpt_z2Sq
-    jsr fac1_to_memYYXX
-
-    rts
-
-
-; N is set if |Z| > 2
-checkDivergence:
     ; fac1 = z1 * z1 + z2 * z2
-    +movYYAA mflpt_z1Sq
-    jsr fac1_read_memYYAA
-    +movYYAA mflpt_z2Sq
-    jsr fac1_add_memYYAA
-    +movYYAA mflpt_4
-    jsr fac1_compare_to_memYYAA
- 
+    +fpmov mflpt_tmp, mflpt_z1Sq
+    +fpadd mflpt_tmp, mflpt_z2Sq
+    +fpsub mflpt_tmp, mflpt_4
     rts
 
 setPoint:
