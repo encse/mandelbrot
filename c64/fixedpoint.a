@@ -19,20 +19,18 @@ sqrhi           = $c200
 negsqrlo        = $c400
 negsqrhi        = $c600
 
-;the insputs and outputs
-
 ;multiplier, 2 bytes;
-x0=$c895;
-x1=$c896;
+x0=$8b;
+x1=$8c;
 ;multiplier, 2 bytes
-y0=$c890;
-y1=$c891;
+y0=$8d;
+y1=$8e;
 
-mul16_sign = $c880    ; temporal variable to store the sign of the mul 16 multiplication
-z0=$c881
-z1=$c882
-z2=$c883
-z3=$c884
+z0=$61
+z1=$62
+z2=$63
+z3=$64
+mul16_sign = $65    ; temporal variable to store the sign of the mul 16 multiplication
 
 !macro fp @value {
     !set @num = int(float(@value) * 256 + 0.5)

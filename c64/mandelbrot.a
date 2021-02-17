@@ -2,6 +2,11 @@
 ; https://sites.google.com/site/6502asembly/6502-instruction-set
 ; https://github.com/meonwax/acme/tree/master/docs
 
+fp_z1   = $03
+fp_z1Sq = $05
+fp_z2   = $16
+fp_z2Sq = $18
+fp_tmp  = $1a
     !to "mandelbrot.prg",cbm
 
     *= $1500
@@ -224,19 +229,15 @@ initGraphics:
     
     rts
 
-x:            !word 0
-y:            !word 0
-i:            !word 0
 fp_4:      +fp  4.0
 fp_0:      +fp  0.0
 fp_dC:     +fp  0.01
 fp_c01:    +fp -2.0
 fp_c1:     +fp  0.0
 fp_c2:     +fp -1.0
-fp_z1:     +fp  0.0
-fp_z1Sq:   +fp  0.0
-fp_z2:     +fp  0.0
-fp_z2Sq:   +fp  0.0
-fp_tmp:    +fp  0.0
+
+x:            !word 0
+y:            !word 0
+i:            !word 0
 
 
