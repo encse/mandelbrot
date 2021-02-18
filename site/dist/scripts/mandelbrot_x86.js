@@ -24,18 +24,18 @@ window.onload = function () {
 
 
     const emulator = new V86Starter({
-        wasm_path: "./v86/v86.wasm",
+        wasm_path: "scripts/v86/v86.wasm",
         memory_size: 1 * 1024 * 1024,
         vga_memory_size: 1 * 1024 * 1024,
         screen_container: document.getElementById("screen_container"),
         bios: {
-            url: "./v86/seabios.bin",
+            url: "scripts/v86/seabios.bin",
         },
         vga_bios: {
-            url: "./v86/vgabios.bin",
+            url: "scripts/v86/vgabios.bin",
         },
         fda: {
-            url: "./boot.img",
+            url: "bin/boot.img",
         },
         autostart: true,
     });

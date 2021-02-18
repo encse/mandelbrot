@@ -5,7 +5,7 @@
 <head lang="hu">
     <meta property="og:title" content="Mandelbrot">
     <meta property="og:description" content="Mandelbrot set on vintage hardware">
-    <meta property="og:image" content="https://csokavar.hu/projects/mandelbrot/screenshot.png">
+    <meta property="og:image" content="https://csokavar.hu/projects/mandelbrot/images/screenshot.png">
     <meta property="og:url" content="https://csokavar.hu/projects/mandelbrot/index.html">
     <meta name="twitter:card" content="summary_large_image">
 
@@ -13,8 +13,8 @@
     <link href="app.css?v=a1bff5c" type="text/css" rel="stylesheet" media="all" />
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Monoton&display=swap" rel="stylesheet">
-    <script src="v86/libv86.js"></script>
-	<script src="mandelbrot_x86.js"></script>
+    <script src="scripts/v86/libv86.js"></script>
+	<script src="scripts/mandelbrot_x86.js"></script>
 </head>
 
 <body>
@@ -28,9 +28,9 @@
             <a href="x86.html" class="active"/>x86</a>
         </nav>
         <article>
-            <h1>x86 adventures | <a href="boot.img">download</a></h1>
-<p>Let's jump a few years. This little demo shows a x86 emulator in webassembly. The thing would be about 1000x faster in a decent emulator, but it should be fine for our demonstration purposes. If you want the full experience, download the <a href="boot.img">floppy image</a> and drop it into your favourite emulator or a real PC.</p>
-<p><img src="screenshot.png" alt="screenshot"></p>
+            <h1>x86 adventures | <a href="bin/boot.img">download</a></h1>
+<p>Let's jump a few years. This little demo shows a x86 emulator in webassembly. The thing would be about 1000x faster in a decent emulator, but it should be fine for our demonstration purposes. If you want the full experience, download the <a href="bin/boot.img">floppy image</a> and drop it into your favourite emulator or a real PC.</p>
+<p><img src="images/screenshot.png" alt="screenshot"></p>
 <h2>First steps</h2>
 <p>I always wanted to write my own boot loader. (In fact this is what inspired the whole Manderbrot saga.) It looks so cryptic and hardcore, isn't it? How does a PC start?</p>
 <p>Back in the days (before UEFI) when a PC was booting it started to look around on the storage devices for something that looked like a 'boot sector'. It was loading the first sector (512 bytes) from each disk and if a sector ended with the magic bytes <code>0xAA55</code> it supposed that it's a boot sector. It loaded it into a specified place in memory and just executed it. What could go wrong?</p>
@@ -49,7 +49,14 @@
 <p>Imagine some really hardcode stuff here.</p>
 <h2>Real hardware</h2>
 <p>The section wouldn't be complete without a test on real hardware. I asked around on the net and found the <a href="https://www.reddit.com/r/vintagecomputing/">vintage computing</a> reddit group. where <a href="https://www.reddit.com/user/istarian/">u/istarian</a> was kind enough to try it on his old laptop successfully booting from a floppy disk.</p>
-<p><img src="p3.jpg" alt="p3.jpg"></p>
+<p><img src="images/p3.jpg" alt="p3.jpg">
+Source: <a href="https://imgur.com/gallery/3RPSca1">https://imgur.com/gallery/3RPSca1</a></p>
+<p>This is a Dell Latitude C600 (Pentium III 1 GHz, 512 MB RAM).</p>
+<p>Later <a href="https://www.reddit.com/user/ilTrolloso">u/ilTrolloso</a> tried it on a few more machines. It seems that
+my code doesnt work on Pentium MMX machines, because I used a special compare instruction
+that was introduced in the Pentium 3. This image is taken from a Thinkpad T23 (Pentium III@1133MHz):</p>
+<p><img src="images/thinkpad_t23.jpg" alt="Thinkpad">
+Source: <a href="https://imgur.com/a/ySZvKGO">https://imgur.com/a/ySZvKGO</a></p>
 
         </article>
     </main>

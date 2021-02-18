@@ -35,9 +35,15 @@ all:
 make-site:
 	@echo ''
 	@echo "\033[32m====== Building the site ======\033[39;49m"
-	cp bin/boot.img site/dist
-	cp bin/mandelbrot.d64 site/dist
+	
+	cp x86/*.img site/dist/bin
+	cp x86/*.bin site/dist/bin
+
+	cp c64/*.prg site/dist/bin
+	cp c64/*.d64 site/dist/bin
+
 	npm run build --prefix site
+
 
 run-c64:
 	make -C c64 run

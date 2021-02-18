@@ -22,7 +22,7 @@ window.onload = async function () {
     canvas.style.height = "480px";
     div.appendChild(canvas);
 
-    const response = await fetch('mandelbrot.d64');
+    const response = await fetch('bin/mandelbrot.d64');
     const bytes = new Uint8Array(await response.arrayBuffer());
 
     function loadFiles() {
@@ -39,6 +39,6 @@ window.onload = async function () {
     };
 
     const script = document.createElement('script');
-    script.src = "c64/x64.js";
+    script.src = "scripts/vice/x64.js";
     document.head.appendChild(script); 
 }
