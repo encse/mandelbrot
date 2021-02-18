@@ -27,7 +27,7 @@
             <a href="x86.html" class=""/>x86</a>
         </nav>
         <article>
-            <h1>C64 adventures | <a href="bin/mandelbrot.d64">download</a></h1>
+            <h1>C64 adventures | <a href="bin/mandelbrot.d64">download</a> | <a href="https://github.com/encse/mandelbrot/tree/master/c64">source</a></h1>
 <p>I started with installing the ACME assembler and the VICE emulator for the Commodore 64. Spent some time getting familiar with the assembly language. It wasn't totally knew, but not because my childhood, I only used BASIC then. I learned a lot about the 65xx processors when I wrote a NES emulator a few years ago. That family was quite common in the 1980s, many Commodore machines and also the Apple ][ used that.</p>
 <p><img src="images/c64-screenshot.png" alt="screenshot"></p>
 <p>The biggest obtacle to be defated is that the C64 doesn't a have a multiplication operation. It can add and subtract numbers, but no multiplication (and division). One has two options: either using the floating point routines that come with the C64 BASIC interpreter or implement them by hand. There are various sources with assembly snippets around, and after I realised that the floating point arithmetic is unbearably slow for my purposes I decided to switch to 16 bit fixed point arithmetic (with 8 bit for the fraction part) and pulled in some routines from <a href="https://codebase64.org/">https://codebase64.org/</a>.</p>

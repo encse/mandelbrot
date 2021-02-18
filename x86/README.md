@@ -1,3 +1,19 @@
+## Build and run
+
+I used `Qemu` and `Nasm` on my mac for development:
+
+```
+    brew install qemu
+    brew install nasm
+```
+
+To build and run:
+```
+    make run-x86
+```
+
+
+## Troubleshooting
 from: https://www.arthurkoziel.com/qemu-on-macos-big-sur/
 
 Around 3 months ago I wrote a blog post about how to create a QEMU Ubuntu 20.04 VM on macOS. 
