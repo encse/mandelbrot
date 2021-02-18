@@ -1,12 +1,14 @@
-# Mandelbrot set as a bootloader
+# Mandelbrot drawers for vintage hardware
 
-A 16 bit bootloader written in assembly, featuring 320x200 graphics with 256 colors and mouse handling. 
+A collection of Mandelbrot drawers for old hardware. I use this repo to learn about ancient stuff, and improve assembly skills.
+
 
 ![screenshot](site/screenshot.png)
 
 Live demo available [here](https://csokavar.hu/projects/mandelbrot).
 
-I used Qemu and Nasm on my mac for development:
+## For the x86 version
+I used `Qemu` and `Nasm` on my mac for development:
 
 ```
     brew install qemu
@@ -15,12 +17,20 @@ I used Qemu and Nasm on my mac for development:
 
 To build and run:
 ```
-    make run
+    make run-x86
 ```
 
-The makefile creates a bootable [floppy image](bin/boot.img) as well. This can be used in VirtualBox 
-or on real hardware:
+## For the C64 version
 
-<img src="site/p3.jpg" width="600" />
+I used the `vice` emulator and the `acme` assembler.
 
+```
+    brew install vice
+    brew install acme
+```
+
+To build and run:
+```
+    make run-c64
+```
 
