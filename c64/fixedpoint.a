@@ -1,0 +1,225 @@
+!macro fp @value {
+    !set @num = int(float(@value) * 256 + 0.5)
+    !if @num >0{
+        !if @num > 32767 {
+            !error "FLPT overflow"
+        }
+        !by 255 & @num
+        !by 255 & (@num >> 8)
+
+    } else if @num = 0 {
+        !by 0, 0
+    } else {
+        !if @num < -32768 {
+            !error "FLPT underflow"
+        }
+        !set @num = 0xffff + @num
+        !by 255 & @num
+        !by 255 & (@num >> 8)
+    }
+}
+
+!macro fpmov @dst, @src {
+    lda @src
+    sta @dst
+    lda @src + 1
+    sta @dst + 1
+}
+
+!macro fpadd @dst, @src {
+    clc
+    lda @src
+    adc @dst
+    sta @dst
+    lda @src+1
+    adc @dst+1
+    sta @dst+1
+}
+
+!macro fpsub @dst, @src {
+    sec
+    lda @dst
+    sbc @src
+    sta @dst
+    lda @dst+1
+    sbc @src+1
+    sta @dst+1
+}
+
+!macro fpmul @dst, @src {
+    lda @src
+    sta fixedpoint_x0
+    lda @src + 1
+    sta fixedpoint_x1
+
+    lda @dst
+    sta fixedpoint_y0
+    lda @dst + 1
+    sta fixedpoint_y1
+
+    jsr mul16
+
+    lda fixedpoint_x0
+    sta @dst
+    lda fixedpoint_x1
+    sta @dst + 1
+}
+
+!macro twoscomplement @val {
+        clc
+        lda @val
+        eor #$ff
+        adc #$01
+        sta @val
+
+        lda @val+1
+        eor #$ff
+        adc #$00
+        sta @val+1
+}
+
+fpinit:
+        ldx #$00
+        txa
+        !by $c9   ; CMP #immediate - skip TYA and clear carry flag
+lb1:    tya
+        adc #$00
+ml1:    sta fixedpoint_sqrhi,x
+        tay
+        cmp #$40
+        txa
+        ror
+ml9:    adc #$00
+        sta ml9+1
+        inx
+ml0:    sta fixedpoint_sqrlo,x
+        bne lb1
+        inc ml0+2
+        inc ml1+2
+        clc
+        iny
+        bne lb1
+
+        ldx #$00
+        ldy #$ff
+.mt1:
+        lda fixedpoint_sqrhi+1,x
+        sta fixedpoint_negsqrhi+$100,x
+        lda fixedpoint_sqrhi,x
+        sta fixedpoint_negsqrhi,y
+        lda fixedpoint_sqrlo+1,x
+        sta fixedpoint_negsqrlo+$100,x
+        lda fixedpoint_sqrlo,x
+        sta fixedpoint_negsqrlo,y
+        dey
+        inx
+        bne .mt1
+        rts
+
+
+mul16:
+        ldy #0              ; sign of the result
+        lda fixedpoint_x1
+        bpl .pos_x
+        +twoscomplement fixedpoint_x0
+        iny                 ; switch sign
+.pos_x:
+        lda fixedpoint_y1
+        bpl .pos_y
+        +twoscomplement fixedpoint_y0
+        iny                 ; switch sign
+.pos_y:
+        jsr umult8_8
+        tya
+        and #$01            ; check if sign is odd
+        beq +
+        +twoscomplement fixedpoint_x0  ; product = -product
++:
+        rts
+
+; compute x * y where x and y are 8.8 bit unsigned fixpoint numbers
+; result is stored in x0, x1
+; adapted from https://codebase64.org/doku.php?id=base:seriously_fast_multiplication
+umult8_8:
+        ; x0 * y0 = AAaa
+        ; x0 * y1 = BBbb
+        ; x1 * y0 = CCcc
+        ;
+        ;       AAaa
+        ;     BBbb
+        ;     CCcc
+        ; +   dd
+        ; ----------
+        ;   PRODUCT!
+
+        lda fixedpoint_x0
+        sta sm1a+1
+        sta sm3a+1
+        sta sm5a+1
+        sta sm7a+1
+        eor #$ff
+        sta sm2a+1
+        sta sm4a+1
+        sta sm6a+1
+        sta sm8a+1
+        lda fixedpoint_x1
+        sta sm1b+1
+        sta sm3b+1
+        sta sm5b+1
+        eor #$ff
+        sta sm2b+1
+        sta sm4b+1
+        sta sm6b+1
+
+        ; Perform x0 * y0 = AAaa
+        ldx fixedpoint_y0
+        sec
+sm1a:   lda fixedpoint_sqrlo,x
+sm2a:   sbc fixedpoint_negsqrlo,x
+        ;aa is now in the accumulator
+sm3a:   lda fixedpoint_sqrhi,x
+sm4a:   sbc fixedpoint_negsqrhi,x
+        sta _AA + 1
+
+        ; Perform x1 * y0 = CCcc
+        sec
+sm1b:   lda fixedpoint_sqrlo,x
+sm2b:   sbc fixedpoint_negsqrlo,x
+        sta _cc + 1
+sm3b:   lda fixedpoint_sqrhi,x
+sm4b:   sbc fixedpoint_negsqrhi,x
+        sta _CC + 1
+
+        ; Perform x0 * y1 = BBbb
+        ldx fixedpoint_y1
+        sec
+sm5a:   lda fixedpoint_sqrlo,x
+sm6a:   sbc fixedpoint_negsqrlo,x
+        sta _bb + 1
+sm7a:   lda fixedpoint_sqrhi,x
+sm8a:   sbc fixedpoint_negsqrhi,x
+        sta _BB + 1
+
+        ; Perform x1 * y1 = dd
+        sec
+sm5b:   lda fixedpoint_sqrlo,x
+sm6b:   sbc fixedpoint_negsqrlo,x
+        sta _dd + 1
+
+        ; Add the separate multiplications together
+        clc
+_AA:    lda #0
+_bb:    adc #0
+        sta fixedpoint_x0
+_BB:    lda #0
+_CC:    adc #0
+        sta fixedpoint_x1
+        bcc _cc
+        clc
+_cc:    lda #0
+        adc fixedpoint_x0
+        sta fixedpoint_x0
+_dd:    lda #0
+        adc fixedpoint_x1
+        sta fixedpoint_x1
+        rts

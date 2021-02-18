@@ -1,0 +1,27 @@
+fixedpoint_sqrlo        = $c000  ; tables of squares
+fixedpoint_sqrhi        = $c200  ; sqr(x) = x ^ 2 / 4
+fixedpoint_negsqrlo     = $c400 ; negsqr(x) = (255 - x) ^ 2 / 4
+fixedpoint_negsqrhi     = $c600
+
+fixedpoint_x0           = $8b;   ; x multiplier
+fixedpoint_x1           = $8c;
+fixedpoint_y0           = $8d;   ; y multiplier
+fixedpoint_y1           = $8e;
+
+fixedpoint_z0           = $61    ; multiplication result
+fixedpoint_z1           = $62
+fixedpoint_z2           = $63
+
+mandelbrot_fp_z1        = $03
+mandelbrot_fp_z1Sq      = $05
+mandelbrot_fp_z2        = $16
+mandelbrot_fp_z2Sq      = $18
+mandelbrot_fp_tmp       = $1a
+mandelbrot_i            = $1c
+
+graphics_x              = $1d
+graphics_y              = $1f
+graphics_bmpage         = $ff
+graphics_mask           = $59
+graphics_loc            = $5a
+graphics_store          = $5c

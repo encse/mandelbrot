@@ -1,0 +1,256 @@
+
+<html>
+    <head>
+<style>
+    canvas {
+        transform: scale(2) translate(100px, 100px);
+
+    }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="320" height="200"></canvas>
+<script>
+
+
+    floatingpoint = {
+
+        mflpt: (x) => {
+            return x;
+        },
+        st: (n) => {
+            return `{n}`;
+        },
+
+        fac1_add_memYYAA: (mflpt) =>{
+            fac1 += mflpt;
+        },
+        fac1_memYYAA_minus_fac1: (mflpt) => {
+            fac1 = mflpt-fac1;
+        },
+        neg: (x) => {
+            return -x;
+        },
+        fac1_times_memYYAA: (mflpt) => {
+            fac1 *= mflpt;
+        },
+
+        isNegative: (x) => {
+            return x < 0;
+        },
+
+        fac1_compare_to_memYYAA: (mflpt) => {
+            fac1 = fac1 - mflpt;
+            return fac1 > 0;
+        }
+    }
+
+    assert = (x) => {
+        if(x<0 || x > 0xffff || x !== (x & 0xffff)){
+            alert("coki");
+        }
+    }
+
+    fixpoint = {
+
+        mflpt: (x) => {
+            let num =  Math.floor(x* 256 + 0.5);
+
+            if (num >= 0){
+                return num & 0xffff; 
+            } else {
+                return (num + 0x10000) % 0xffff;
+            }
+            return res;
+        },
+        st: (n) => {
+            return n;
+            // return fixpoint.isNegative(n) ? '-' + fixpoint.neg(n)/256 : n/256;
+        },
+
+
+        fac1_add_memYYAA: (mflpt) => {
+            assert(mflpt);
+            fac1 = (fac1 + mflpt) & 0xffff;
+            assert(fac1);
+        },
+        fac1_memYYAA_minus_fac1: (mflpt) => {
+            assert(mflpt);
+            fac1 = fixpoint.neg(fac1);
+            fac1 = (fac1 + mflpt) & 0xffff;
+            assert(fac1);
+        },
+        neg: (x) => {
+            assert(x);
+            x = x ^ 0xffff;
+            return (x + 1) & 0xffff;
+        },
+
+        fac1_times_memYYAA: (mflpt) => {
+            assert(mflpt);
+            sign = 0;
+            if (fixpoint.isNegative(mflpt)) {
+                mflpt = fixpoint.neg(mflpt);
+                sign++;
+            } 
+            if(fixpoint.isNegative(fac1)){
+                fac1 = fixpoint.neg(fac1);
+                sign++;
+            }
+
+            let m = (fac1 * mflpt) & 0xffffffff;
+            s = 0 ;// (m & 0x80) >> 7;
+
+            fac1 = ((m >> 8) + s) & 0xffff;
+
+            if (sign % 2 == 1) {
+                fac1 = fixpoint.neg(fac1);
+            }
+            assert(fac1);
+        },
+
+        isNegative: (x) => {
+            assert(x);
+            return (x & 0x8000) != 0;
+        },
+
+        fac1_compare_to_memYYAA: (mflpt) => {
+            assert(mflpt);
+            mflpt = fixpoint.neg(mflpt);
+            fixpoint.fac1_add_memYYAA(mflpt);
+            res = fac1 != 0 && !fixpoint.isNegative(fac1);
+            assert(fac1);
+            return res;
+        }
+    }
+
+    num = fixpoint;
+   
+    let canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext('2d');
+    let canvasWidth = canvas.width;
+    let canvasHeight = canvas.height;
+    ctx.fillStyle = '#9682e1';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    let id = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+    let pixels = id.data;
+        
+
+    let MAX_ITERATIONS = 16;
+    let mflpt_4 =    num.mflpt( 4.0);
+    let mflpt_0=     num.mflpt( 0.0);
+    let mflpt_dC=    num.mflpt( 0.01);
+    let mflpt_c01=   num.mflpt(-2.0);
+    let mflpt_c1=    num.mflpt( 0.0);
+    let mflpt_c2=    num.mflpt(-1.0);
+    let mflpt_z1=    num.mflpt( 0.0);
+    let mflpt_z1Sq=  num.mflpt( 0.0);
+    let mflpt_z2=    num.mflpt( 0.0);
+    let mflpt_z2Sq=  num.mflpt( 0.0);
+    let mflpt_tmp=   num.mflpt( 0.0);
+    let fac1 =       num.mflpt(0.0);
+
+
+    function mandelbrot(){
+        console.log("web");
+        fac1 = 65129
+        num.fac1_times_memYYAA(65129);
+        
+        let j = 0;
+        for (let y=0;y<200;y++) {
+            mflpt_c1 = mflpt_c01;
+            for (let x=0;x<256;x++) {
+                
+                fac1 = mflpt_0;
+                mflpt_z1 = fac1;
+                mflpt_z2 = fac1;
+                mflpt_z1Sq = fac1;
+                mflpt_z2Sq = fac1;
+                for(let i=0; i<= MAX_ITERATIONS;i++){
+                    if (i == MAX_ITERATIONS){
+                        setPoint(x,y);
+                        //setPoint(x,200-y);
+                        break;
+                    }
+                    j++;
+                    if(j == 100){
+                        return;
+                    }
+                    updateZ();
+                    console.log(num.st(mflpt_z1));
+                    console.log(num.st(mflpt_z1Sq));
+                    console.log(num.st(mflpt_z2));
+                    console.log(num.st(mflpt_z2Sq));
+                    if (checkDivergence()) {
+                        break;
+                    }
+                }
+                console.log("....X");
+                fac1 = mflpt_c1;
+                num.fac1_add_memYYAA(mflpt_dC)
+                mflpt_c1 = fac1;
+            }
+            console.log("....Y");
+            fac1 = mflpt_c2;
+            num.fac1_add_memYYAA(mflpt_dC)
+            mflpt_c2 = fac1;
+        }
+    }
+
+    mandelbrot();
+    ctx.putImageData(id, 0, 0);
+        
+
+    function updateZ() {
+
+        fac1 = mflpt_z2Sq
+
+        num.fac1_memYYAA_minus_fac1(mflpt_z1Sq)
+        num.fac1_add_memYYAA(mflpt_c1)
+
+        mflpt_tmp = fac1
+
+        fac1 = mflpt_z1
+        num.fac1_add_memYYAA(mflpt_z1)
+
+        num.fac1_times_memYYAA(mflpt_z2)
+
+        num.fac1_add_memYYAA(mflpt_c2)
+
+        mflpt_z2 = fac1;
+
+        fac1 = mflpt_tmp;
+        mflpt_z1 = fac1;
+
+        fac1 = mflpt_z1;
+        num.fac1_times_memYYAA(mflpt_z1)
+        mflpt_z1Sq = fac1;
+
+        fac1 = mflpt_z2;
+        num.fac1_times_memYYAA(mflpt_z2);
+        mflpt_z2Sq = fac1;
+    }
+
+
+    function checkDivergence(){
+        fac1 = mflpt_z1Sq;
+        num.fac1_add_memYYAA(mflpt_z2Sq)
+        return num.fac1_compare_to_memYYAA(mflpt_4);
+    }
+
+    function setPoint(x, y){
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let off = (y * id.width + x) * 4;
+        pixels[off] = r;
+        pixels[off + 1] = g;
+        pixels[off + 2] = b;
+        pixels[off + 3] = 255;
+    }
+
+
+
+</script>
+</body>
+</html>

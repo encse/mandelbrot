@@ -1,0 +1,109 @@
+
+initGraphics:
+    ; Toggle standard Bitmap Mode 
+    lda $d018 ; 53272
+    ora #8
+    sta $d018
+
+    lda $d011 ; 53265
+    ora #32
+    sta $d011
+
+    ; Set colors
+    ldx #0
+    lda #14
+.setColor:
+    ; $0400-$07ff screen ram
+    sta $400, X
+    sta $500, X
+    sta $600, X
+    sta $700, X  
+    inx
+    bne .setColor
+
+    ; Clear screen
+    ldx #0
+    lda #0 
+.clearScreen:
+    ;$2000 - $3fff: Bitmap RAM
+    sta $2000, X
+    sta $2100, X
+    sta $2200, X
+    sta $2300, X
+    sta $2400, X
+    sta $2500, X
+    sta $2600, X
+    sta $2700, X
+    sta $2800, X
+    sta $2900, X
+    sta $2a00, X
+    sta $2b00, X
+    sta $2c00, X
+    sta $2d00, X
+    sta $2e00, X
+    sta $2f00, X
+    sta $3000, X
+    sta $3100, X
+    sta $3200, X
+    sta $3300, X
+    sta $3400, X
+    sta $3500, X
+    sta $3600, X
+    sta $3700, X
+    sta $3800, X
+    sta $3900, X
+    sta $3a00, X
+    sta $3b00, X
+    sta $3c00, X
+    sta $3d00, X
+    sta $3e00, X
+    sta $3f00, X
+    inx
+    bne .clearScreen
+    
+    rts
+
+setPoint:
+    ; https://github.com/spoitras/High-resolution-plot-sub-routine/blob/master/plot.asm
+    ; address = base + int(y/8) * 320 + (y and 7) + int(x/8) * 8
+
+    lda	graphics_x
+    and	#7
+    tax
+    sec
+    lda	#0
+    sta graphics_loc
+.shift:	
+    ror
+    dex
+    bpl .shift
+    sta graphics_mask
+    lda graphics_x
+    and #$f8
+    sta graphics_store
+    lda graphics_y
+    lsr
+    lsr
+    lsr
+    sta graphics_loc+1
+    lsr
+    ror	graphics_loc
+    lsr
+    ror	graphics_loc
+    adc graphics_loc+1
+    sta graphics_loc+1
+    lda graphics_y
+    and #7
+    adc graphics_loc
+    adc graphics_store
+    sta graphics_loc
+    lda graphics_loc+1
+    adc graphics_x+1
+    adc graphics_bmpage
+    sta graphics_loc+1
+    ldy	#0
+    lda (graphics_loc),y
+    ora graphics_mask,y
+    sta (graphics_loc),y
+.ret:
+    rts

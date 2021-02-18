@@ -1,0 +1,118 @@
+
+
+MAX_ITERATIONS = 14
+
+mandelbrot_fp_4:      +fp  4.0
+mandelbrot_fp_0:      +fp  0.0
+mandelbrot_fp_dCOdd:  !by $02, $00
+mandelbrot_fp_dCEven  !by $03, $00
+mandelbrot_fp_c01:    +fp -2.0
+mandelbrot_fp_c1:     +fp  0.0
+mandelbrot_fp_c2:     +fp  0.0
+
+drawMandelbrot:
+
+    jsr fpinit
+    jsr initGraphics
+
+    lda #100
+    sta graphics_y
+    lda #0
+    sta graphics_y + 1
+    
+.forY:
+    +fpmov mandelbrot_fp_c1, mandelbrot_fp_c01
+    lda #0
+    sta graphics_x
+    sta graphics_x + 1
+
+.forX:
+    +fpmov mandelbrot_fp_z1, mandelbrot_fp_0
+    +fpmov mandelbrot_fp_z2, mandelbrot_fp_0
+    +fpmov mandelbrot_fp_z1Sq, mandelbrot_fp_0
+    +fpmov mandelbrot_fp_z2Sq, mandelbrot_fp_0
+
+    lda #MAX_ITERATIONS
+    sta mandelbrot_i
+
+.forI: 
+    jsr updateZ
+    bpl .nextX
+    ldx mandelbrot_i
+    dex
+    stx mandelbrot_i
+    bne .forI
+
+    ; set x,y and also x, (200 - y) because of pattern symmetry
+
+    jsr setPoint
+    sec
+    lda #200
+    sbc graphics_y
+    sta graphics_y
+
+    jsr setPoint
+    sec
+    lda #200
+    sbc graphics_y
+    sta graphics_y
+
+.nextX:
+    ldx graphics_x
+    inx 
+    stx graphics_x
+    beq .nextY
+    txa
+    and #1
+    bne .evenX:
+    +fpadd mandelbrot_fp_c1, mandelbrot_fp_dCOdd
+    jmp .forX
+
+.evenX:
+    +fpadd mandelbrot_fp_c1, mandelbrot_fp_dCEven
+    jmp .forX
+
+.nextY:
+    
+    ldx graphics_y
+    inx 
+    stx graphics_y
+    txa
+    cmp #201
+    beq .done
+    and #1
+    bne .evenY:
+    +fpadd mandelbrot_fp_c2, mandelbrot_fp_dCOdd
+    jmp .forY
+.evenY:
+    +fpadd mandelbrot_fp_c2, mandelbrot_fp_dCEven
+    jmp .forY
+
+.done:
+    jmp *
+
+; compute z = z^2 + c, update z^2
+; N is set if |z| > 4
+updateZ:
+
+     ;z2 = 2 * z1 * z2 + c2
+    +fpmul mandelbrot_fp_z2, mandelbrot_fp_z1
+    +fpadd mandelbrot_fp_z2, mandelbrot_fp_z2 ;*2
+    +fpadd mandelbrot_fp_z2, mandelbrot_fp_c2
+
+    ; z1 = z1 * z1 - z2 * z2 + c1 
+    +fpmov mandelbrot_fp_z1, mandelbrot_fp_z1Sq
+    +fpsub mandelbrot_fp_z1, mandelbrot_fp_z2Sq
+    +fpadd mandelbrot_fp_z1, mandelbrot_fp_c1
+
+    ; update z1^2 and z2^2
+    +fpmov mandelbrot_fp_z1Sq, mandelbrot_fp_z1
+    +fpmul mandelbrot_fp_z1Sq, mandelbrot_fp_z1Sq
+    +fpmov mandelbrot_fp_z2Sq, mandelbrot_fp_z2
+    +fpmul mandelbrot_fp_z2Sq, mandelbrot_fp_z2Sq
+
+    ; tmp = z1 * z1 + z2 * z2 - 4
+    +fpmov mandelbrot_fp_tmp, mandelbrot_fp_z1Sq
+    +fpadd mandelbrot_fp_tmp, mandelbrot_fp_z2Sq
+    +fpsub mandelbrot_fp_tmp, mandelbrot_fp_4
+    rts

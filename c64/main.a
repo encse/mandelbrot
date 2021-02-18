@@ -1,0 +1,23 @@
+; http://www.6502.org/tutorials/6502opcodes.html
+; https://sites.google.com/site/6502asembly/6502-instruction-set
+; https://github.com/meonwax/acme/tree/master/docs
+
+    !to "mandelbrot.prg",cbm
+
+    * = $0801                               ; BASIC start address (#2049)
+    !word next, 10       ; Next line and current line number
+    !byte $9e            ; SYS
+    !text " 4096",0      ; 4096
+next:   
+    !word 0              ; End of program
+
+
+    *= $1000
+    jsr drawMandelbrot
+
+    !src "memory.a"
+    !src "fixedpoint.a"
+    !src "graphics.a"
+    !src "mandelbrot.a"
+
+
