@@ -2,15 +2,19 @@ import fs from 'fs';
 import path from 'path';
 import MarkdownIt from 'markdown-it'
 import metadataParse from 'markdown-yaml-metadata-parser';
-
+import sha256 from 'fast-sha256';
 const inputDir = "articles"
 const outputDir = "dist"
-
 
 for (let item of fs.readdirSync(inputDir)) {
     if(item.startsWith(".")){
         continue;
     }
+
+    const css_version = Buffer
+                .from(sha256(fs.readFileSync(path.join('dist', 'app.css'))))
+                .toString('hex')
+                .substring(0, 7);
 
     if (item.endsWith('.md')) {
         const fpatIn = path.join(inputDir, item);
@@ -24,6 +28,7 @@ for (let item of fs.readdirSync(inputDir)) {
 
         const args = {
             content: md.render(content),
+            css_version: css_version,
             nav_index: "",
             nav_x86: "",
             nav_c64: "",

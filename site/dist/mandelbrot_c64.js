@@ -17,16 +17,20 @@ window.onload = async function () {
 
     const canvas = document.createElement("canvas");
     canvas.id ="screen_canvas";
+    canvas.style.display = "block";
+    canvas.style.width = "640px";
+    canvas.style.height = "480px";
     div.appendChild(canvas);
 
     const response = await fetch('mandelbrot.d64');
     const bytes = new Uint8Array(await response.arrayBuffer());
 
     function loadFiles() {
+        screenshot.style.display = "none";
         FS.createDataFile('/', 'mandelbrot.d64', bytes, true, true);
     }
 
-    const viceArguments = ['+sound', '-autostart', 'mandelbrot.d64', ];
+    const viceArguments = ['+sound', '-autostart', 'mandelbrot.d64'];
 
     window.Module = {
         preRun: [loadFiles],

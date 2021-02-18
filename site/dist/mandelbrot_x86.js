@@ -17,6 +17,9 @@ window.onload = function () {
 
     const canvas = document.createElement("canvas");
     canvas.id ="screen_canvas";
+    canvas.style.width = "320px";
+    canvas.style.height = "200px";
+
     div.appendChild(canvas);
 
 

@@ -10,13 +10,15 @@
     <meta name="twitter:card" content="summary_large_image">
 
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link href="app.css" type="text/css" rel="stylesheet" media="all" />
+    <link href="app.css?v=a1bff5c" type="text/css" rel="stylesheet" media="all" />
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Monoton&display=swap" rel="stylesheet">
     <script src="mandelbrot_c64.js"></script>
 </head>
 
 <body>
     <header>
-        <img src="mandelbrot.png" width="800px" />
+        <h1>Mandelbrot</h1>
     </header>
     <main>
         <nav>
@@ -25,19 +27,20 @@
             <a href="x86.html" class=""/>x86</a>
         </nav>
         <article>
-            <h1>C64 adventures</h1>
-<p>I started with installing the ACME assembler and the VICE emulator for the Commodore 64. Spent some time getting familiar with the assembly language. It wasn't totally knew. Not because my childhood: I only used BASIC then. But I learned a lot about the 65xx processors when I wrote a NES emulator a few years earlier and the C64 is using some variation the NES processor (and the same is true for many more machines of that era, the Apple ][ for example.)</p>
-<p><img src="screenshot.png" alt="screenshot"></p>
-<p>The biggest issue with the C64 is that it doesn't a have a multiplication operation. It can add and subtract numbers, but no multiplication (and division). So one has two options: either using the floating point routines that come with the C64 BASIC interpreter or implement them by hand. There are various sources with assembly snippets around, and after I realised that the floating point arithmetic is unbearably slow for my purposes I decided to switch to 16 bit fixed point arithmetic (with 8 bit for the fraction part) and pulled in some routines from https://codebase64.org/.</p>
-<p>It didn't work of course... Now how do you debug this thing? I wrote a few assembly routines and tried the arithmetic on a few examples, but it looked all good. There are so many places to screw it up.... The output resembled to the Mandelbrot set but was kind of  well... dotty...</p>
-<p><img src="mandelbrot-fail.jpg" alt="mandelbrot-fail.jpg"></p>
+            <h1>C64 adventures | <a href="mandelbrot.d64">download</a></h1>
+<p>I started with installing the ACME assembler and the VICE emulator for the Commodore 64. Spent some time getting familiar with the assembly language. It wasn't totally knew, but not because my childhood, I only used BASIC then. I learned a lot about the 65xx processors when I wrote a NES emulator a few years ago. That family was quite common in the 1980s, many Commodore machines and also the Apple ][ used that.</p>
+<p><img src="c64-screenshot.png" alt="screenshot"></p>
+<p>The biggest obtacle to be defated is that the C64 doesn't a have a multiplication operation. It can add and subtract numbers, but no multiplication (and division). One has two options: either using the floating point routines that come with the C64 BASIC interpreter or implement them by hand. There are various sources with assembly snippets around, and after I realised that the floating point arithmetic is unbearably slow for my purposes I decided to switch to 16 bit fixed point arithmetic (with 8 bit for the fraction part) and pulled in some routines from <a href="https://codebase64.org/">https://codebase64.org/</a>.</p>
+<p>It didn't work of course... The output resembled to the Mandelbrot set but was kind of well...</p>
+<p><img src="mandelbrot-fail.png" alt="mandelbrot-fail.jpg"></p>
+<p>Now how do I debug this thing? I wrote a few assembly routines and tried the arithmetic for a few examples, but it looked all good. There are so many places to screw it up....</p>
 <p>I quickly created a reference implementation in Javascript with Html canvas so that I know what to expect, but it was just fine. 16 bit is definitely enough. Finally, after some pondering I figured that I could redirect the standard output of the C64 to the printer, and redirect the printer from the emulator to a file. The magic commands are:</p>
 <pre><code>OPEN4,4
 CMD4
 </code></pre>
 <p>After this I could just use the regular <code>PRINT</code> routines to trace my variables and compare it to the reference implementation.</p>
 <p>I found a few places where the multiplication returned bad results. I went through the code a couple of times, but it took me an hour until I found that my Mandelbrot drawer is using the same memory locations for its local variables as the multiplication routine for its helper tables...</p>
-<p>So I essentially overwrote things like 100 * 100 = 10000 with some garbage... (The reality is a bit more tricky as it's not storing 100*100, but you get the idea.)</p>
+<p>So I essentially overwrote things like 100 * 100 = 10000 with some garbage... (The reality is a bit more tricky as it's not directly storing 100*100, but you get the idea.)</p>
 <p>Anyway, once it was fixed, it really started to look like a Mandelbrot set. If you have a C64 at home, here is the <a href="mandelbrot.d64">floppy image</a>. I would be really happy if someone could try this on real hardware and shared a few pictures of the setup with me.</p>
 
         </article>
