@@ -66,6 +66,7 @@ initGraphics:
 setPoint:
     ; https://github.com/spoitras/High-resolution-plot-sub-routine/blob/master/plot.asm
     ; address = base + int(y/8) * 320 + (y and 7) + int(x/8) * 8
+
     lda	graphics_x
     and	#7
     tax
@@ -104,4 +105,5 @@ setPoint:
     lda (graphics_loc),y
     ora graphics_mask,y
     sta (graphics_loc),y
+.ret:
     rts

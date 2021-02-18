@@ -4,7 +4,8 @@ MAX_ITERATIONS = 14
 
 mandelbrot_fp_4:      +fp  4.0
 mandelbrot_fp_0:      +fp  0.0
-mandelbrot_fp_dC:     +fp  0.01
+mandelbrot_fp_dCOdd:  !by $03, $00
+mandelbrot_fp_dCEven  !by $02, $00
 mandelbrot_fp_c01:    +fp -2.0
 mandelbrot_fp_c1:     +fp  0.0
 mandelbrot_fp_c2:     +fp -1.0
@@ -43,12 +44,14 @@ drawMandelbrot:
 
     ; set x,y and also x, (200 - y) because of pattern symmetry
     jsr setPoint
-    lda #172
+    clc
+    lda #199
     sbc graphics_y
     sta graphics_y
 
     jsr setPoint
-    lda #172
+    clc
+    lda #199
     sbc graphics_y
     sta graphics_y
 
@@ -57,39 +60,48 @@ drawMandelbrot:
     inx 
     stx graphics_x
     beq .nextY
+    txa
+    and #1
+    bne .evenX:
+    +fpadd mandelbrot_fp_c1, mandelbrot_fp_dCOdd
+    jmp .forX
 
-    +fpadd mandelbrot_fp_c1, mandelbrot_fp_dC
-
+.evenX:
+    +fpadd mandelbrot_fp_c1, mandelbrot_fp_dCEven
     jmp .forX
 
 .nextY:
+    
     ldx graphics_y
     inx 
     stx graphics_y
+    txa
+    cmp #100
     beq .done
-
-    +fpadd mandelbrot_fp_c2, mandelbrot_fp_dC
-
+    and #1
+    bne .evenY:
+    +fpadd mandelbrot_fp_c2, mandelbrot_fp_dCOdd
     jmp .forY
+.evenY:
+    +fpadd mandelbrot_fp_c2, mandelbrot_fp_dCEven
+    jmp .forY
+
 .done:
     rts
 
 ; compute z = z^2 + c, update z^2
 ; N is set if |z| > 4
 updateZ:
-    ; tmp = z1 * z1 - z2 * z2 + c1 
-    
-    +fpmov mandelbrot_fp_tmp, mandelbrot_fp_c1
-    +fpadd mandelbrot_fp_tmp, mandelbrot_fp_z1Sq
-    +fpsub mandelbrot_fp_tmp, mandelbrot_fp_z2Sq
 
-    ; now compute z2 = 2 * z1 * z2 + c2
+     ;z2 = 2 * z1 * z2 + c2
     +fpmul mandelbrot_fp_z2, mandelbrot_fp_z1
     +fpadd mandelbrot_fp_z2, mandelbrot_fp_z2 ;*2
     +fpadd mandelbrot_fp_z2, mandelbrot_fp_c2
 
-    ; z1 = tmp
-    +fpmov mandelbrot_fp_z1, mandelbrot_fp_tmp
+    ; z1 = z1 * z1 - z2 * z2 + c1 
+    +fpmov mandelbrot_fp_z1, mandelbrot_fp_z1Sq
+    +fpsub mandelbrot_fp_z1, mandelbrot_fp_z2Sq
+    +fpadd mandelbrot_fp_z1, mandelbrot_fp_c1
 
     ; update z1^2 and z2^2
     +fpmov mandelbrot_fp_z1Sq, mandelbrot_fp_z1
@@ -97,7 +109,7 @@ updateZ:
     +fpmov mandelbrot_fp_z2Sq, mandelbrot_fp_z2
     +fpmul mandelbrot_fp_z2Sq, mandelbrot_fp_z2Sq
 
-    ; fac1 = z1 * z1 + z2 * z2
+    ; tmp = z1 * z1 + z2 * z2 - 4
     +fpmov mandelbrot_fp_tmp, mandelbrot_fp_z1Sq
     +fpadd mandelbrot_fp_tmp, mandelbrot_fp_z2Sq
     +fpsub mandelbrot_fp_tmp, mandelbrot_fp_4
