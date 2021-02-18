@@ -4,19 +4,20 @@ MAX_ITERATIONS = 14
 
 mandelbrot_fp_4:      +fp  4.0
 mandelbrot_fp_0:      +fp  0.0
-mandelbrot_fp_dCOdd:  !by $03, $00
-mandelbrot_fp_dCEven  !by $02, $00
+mandelbrot_fp_dCOdd:  !by $02, $00
+mandelbrot_fp_dCEven  !by $03, $00
 mandelbrot_fp_c01:    +fp -2.0
 mandelbrot_fp_c1:     +fp  0.0
-mandelbrot_fp_c2:     +fp -1.0
+mandelbrot_fp_c2:     +fp  0.0
 
 drawMandelbrot:
 
     jsr fpinit
     jsr initGraphics
 
-    lda #0
+    lda #100
     sta graphics_y
+    lda #0
     sta graphics_y + 1
     
 .forY:
@@ -43,15 +44,16 @@ drawMandelbrot:
     bne .forI
 
     ; set x,y and also x, (200 - y) because of pattern symmetry
+
     jsr setPoint
-    clc
-    lda #199
+    sec
+    lda #200
     sbc graphics_y
     sta graphics_y
 
     jsr setPoint
-    clc
-    lda #199
+    sec
+    lda #200
     sbc graphics_y
     sta graphics_y
 
@@ -76,7 +78,7 @@ drawMandelbrot:
     inx 
     stx graphics_y
     txa
-    cmp #100
+    cmp #201
     beq .done
     and #1
     bne .evenY:
@@ -87,7 +89,7 @@ drawMandelbrot:
     jmp .forY
 
 .done:
-    rts
+    jmp *
 
 ; compute z = z^2 + c, update z^2
 ; N is set if |z| > 4

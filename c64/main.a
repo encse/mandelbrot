@@ -4,6 +4,14 @@
 
     !to "mandelbrot.prg",cbm
 
+    * = $0801                               ; BASIC start address (#2049)
+    !word next, 10       ; Next line and current line number
+    !byte $9e            ; SYS
+    !text " 4096",0      ; 4096
+next:   
+    !word 0              ; End of program
+
+
     *= $1000
     jsr drawMandelbrot
 
