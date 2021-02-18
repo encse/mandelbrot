@@ -1,3 +1,8 @@
+
+# Mandelbrot in a bootloader
+
+![screenshot](../site/dist/images/screenshot.png)
+
 ## Build and run
 
 I used `Qemu` and `Nasm` on my mac for development:

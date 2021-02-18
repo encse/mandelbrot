@@ -1,3 +1,7 @@
+# Mandelbrot for the C64
+
+![screenshot](../site/dist/images/c64-screenshot.png)
+
 ## Build and run
 
 I used the `vice` emulator and the `acme` assembler.
