@@ -1,6 +1,4 @@
-all: boot.img
-
-boot.bin:  src/main.asm
+all:
 	@echo '                                                  '
 	@echo '                                ▄█▌               '
 	@echo '                               ╫████              '
@@ -23,22 +21,26 @@ boot.bin:  src/main.asm
 	@echo '                               ╫████              '
 	@echo '                                ╙█▌               '
 	@echo '                                                  '
-	@echo ''
-	@echo "\033[32mCreating boot.bin....\033[39;49m"
-	nasm -i src -fbin -o bin/boot.bin src/main.asm 
-
-boot.img: boot.bin
-	@echo ''
-	@echo "\033[32mCreating floppy image....\033[39;49m"
-	dd if=/dev/zero of=bin/boot.img bs=1024 count=1440 && dd if=bin/boot.bin of=bin/boot.img conv=notrunc 
-	cp bin/boot.img site
 	
-run: all
 	@echo ''
-	@echo "\033[32mStarting up Qemu.... Ctrl+C to exit\033[39;49m"
-	qemu-system-x86_64 -accel hvf -drive format=raw,file=bin/boot.bin
+	@echo "\033[32m====== Building C64 target ======\033[39;49m"
+	make -C c64 all
 
-generate-palette:
 	@echo ''
-	@echo "\033[32mGenerating palette....\033[39;49m"
-	node src/generate-palette.js
+	@echo "\033[32m====== Building x86 target ======\033[39;49m"
+	make -C x86 all
+
+	make make-site
+
+make-site:
+	@echo ''
+	@echo "\033[32m====== Copying resources ======\033[39;49m"
+	cp bin/boot.img site/dist
+	cp bin/mandelbrot.d64 site/dist
+
+run-c64:
+	make -C c64 run
+
+run-x86:
+	make -C x86 run
+

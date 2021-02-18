@@ -1,0 +1,74 @@
+
+<!doctype html>
+<title>Mandelbrot</title>
+
+<head lang="hu">
+    <meta property="og:title" content="Mandelbrot">
+    <meta property="og:description" content="Mandelbrot set in a bootloader">
+    <meta property="og:image" content="https://csokavar.hu/projects/mandelbrot/screenshot.png">
+    <meta property="og:url" content="https://csokavar.hu/projects/mandelbrot/index.html">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link href="app.css" type="text/css" rel="stylesheet" media="all" />
+    <script src="v86/libv86.js"></script>
+	<script src="mandelbrot_x86.js"></script>
+</head>
+
+<body>
+    <header>
+        <img src="mandelbrot.png" width="800px" />
+    </header>
+    <main>
+        <nav>
+            <a href="index.html" class=""/>Mandelbrot</a>
+            <a href="c64.html" class=""/>C64</a>
+            <a href="x86.html" class="active"/>x86</a>
+        </nav>
+        <article>
+            <h1>x86 adventures</h1>
+<p>Let's jump a few years. This little demo shows a x86 emulator in webassembly. The thing would be about 1000x faster in a decent emulator, but it should be fine for our demonstration purposes. If you want the full experience, here is a <a href="boot.img">floppy image</a> that you can use with your favourite emulator or a real PC.</p>
+<p><img src="screenshot.png" alt="screenshot"></p>
+<h2>First steps</h2>
+<p>I always wanted to write my own boot loader. (In fact this is what inspired the whole Manderbrot saga.) It looks so cryptic and hardcore, isn't it? How does a PC start?</p>
+<p>Back in the days (before UEFI) when a PC was booting it started to look around on the storage devices for something that looked like a boot sector. It was loading the first sector (512 bytes) from each disk and if a sector ended with the magic bytes <code>0xAA55</code> it supposed that it's a boot sector. It loaded it into a specified place in memory and just jumped to it. What could go wrong?</p>
+<p>If it really was a boot sector of some OS, it continued the boot process with loading different parts of itself from the disk and finally 'starting' the machine.</p>
+<h2>Programming</h2>
+<p>I installed Qemu and VirtualBox for development and used to  NASM assembler.</p>
+<p>Since I was writing a boot loader I could use the convenience functions of an OS, I had to do everything by hand. The BIOS that comes with the PC can do a couple of things but really not that much, a little bit of input and output to the screen or other devices, just as its name suggests (Basic IO).</p>
+<p>The Mandelbrot set uses graphics, floating point operations and I also wanted to add mouse support. This doesn't fit into the 512 bytes of the boot sector, so I had to write a two-phase loader, like for a real OS. The first 512 byte just prepares for the real stuff...</p>
+<p>I never used floating point in assembly before, and I couldn't really debug the thing. At the end I had to create some small test output that printed out the 64 bit representation of the floats and used a website to translate them to human readable form.</p>
+<p>Once it worked well in Qemu I switched to VirtualBox. It failed miserably.... After a long debug session I realised that if the floating point register stack overflows in VirtualBox it will just return NaN-s for each subsequent operation... An other lesson learned the hard way.</p>
+<h2>Mouse support</h2>
+<p>Today a mouse is part of our daily life, but it wasn't that common in the 1980s. One had to install a mouse driver that came with his mouse on a floppy disk to make it work under MS Dos fiddling with things like <code>config.sys</code> and <code>autoexec.bat</code>. It was only supported out of the box on Windows.</p>
+<p>I found a PS/2 compatible mouse driver on StackOverflow which registers a callback through the <code>15h</code> interrupt and listens to mouse events. Of course PS/2 is the past, but as I heard the USB mouse simulates its behavior. I don't know, it certainly worked in VirtualBox and Qemu.</p>
+<p>Getting the mouse events is one thing, but we also need to draw it somehow. At this point I only knew that the mouse was moved down by say 5 pixels, but nothing else.</p>
+<p>I had to draw my mouse cursor, and come up with a mechanism to save the area that is under the mouse so that I can redraw it later when it is moved. And what if the Mandelbrot loader wants to draw 'under the mouse'? An other case to be handled... What if it's partially out of screen? Think about some really hardcode stuff.</p>
+<h2>Real hardware</h2>
+<p>The section wouldn't be complete without a test on real hardware. So I asked around on the net and found the <a href="https://www.reddit.com/r/vintagecomputing/">vintage computing</a> reddit group. where <a href="https://www.reddit.com/user/istarian/">u/istarian</a> was kind enough to try it on his old laptop successfully booting from a floppy disk.</p>
+<p><img src="p3.jpg" alt="p3.jpg"></p>
+
+        </article>
+    </main>
+    <footer>
+        <p>2021 <a href="https://csokavar.hu">csokavar.hu</a>&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;
+            <img
+                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNMTIgMGMtNi42MjYgMC0xMiA1LjM3My0xMiAxMiAwIDUuMzAyIDMuNDM4IDkuOCA4LjIwNyAxMS4zODcuNTk5LjExMS43OTMtLjI2MS43OTMtLjU3N3YtMi4yMzRjLTMuMzM4LjcyNi00LjAzMy0xLjQxNi00LjAzMy0xLjQxNi0uNTQ2LTEuMzg3LTEuMzMzLTEuNzU2LTEuMzMzLTEuNzU2LTEuMDg5LS43NDUuMDgzLS43MjkuMDgzLS43MjkgMS4yMDUuMDg0IDEuODM5IDEuMjM3IDEuODM5IDEuMjM3IDEuMDcgMS44MzQgMi44MDcgMS4zMDQgMy40OTIuOTk3LjEwNy0uNzc1LjQxOC0xLjMwNS43NjItMS42MDQtMi42NjUtLjMwNS01LjQ2Ny0xLjMzNC01LjQ2Ny01LjkzMSAwLTEuMzExLjQ2OS0yLjM4MSAxLjIzNi0zLjIyMS0uMTI0LS4zMDMtLjUzNS0xLjUyNC4xMTctMy4xNzYgMCAwIDEuMDA4LS4zMjIgMy4zMDEgMS4yMy45NTctLjI2NiAxLjk4My0uMzk5IDMuMDAzLS40MDQgMS4wMi4wMDUgMi4wNDcuMTM4IDMuMDA2LjQwNCAyLjI5MS0xLjU1MiAzLjI5Ny0xLjIzIDMuMjk3LTEuMjMuNjUzIDEuNjUzLjI0MiAyLjg3NC4xMTggMy4xNzYuNzcuODQgMS4yMzUgMS45MTEgMS4yMzUgMy4yMjEgMCA0LjYwOS0yLjgwNyA1LjYyNC01LjQ3OSA1LjkyMS40My4zNzIuODIzIDEuMTAyLjgyMyAyLjIyMnYzLjI5M2MwIC4zMTkuMTkyLjY5NC44MDEuNTc2IDQuNzY1LTEuNTg5IDguMTk5LTYuMDg2IDguMTk5LTExLjM4NiAwLTYuNjI3LTUuMzczLTEyLTEyLTEyeiIvPjwvc3ZnPg==">
+            <a href="https://github.com/encse/bootloader">encse/bootloader</a>
+        </p>
+    </footer>
+
+    <script>
+            (function (i, s, o, g, r, a, m) {
+                i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                    (i[r].q = i[r].q || []).push(arguments)
+                }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                    m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m);
+            })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+        ga('create', 'UA-203054-9', 'auto');
+        ga('send', 'pageview');
+    </script>
+</body>
+
+</html>
