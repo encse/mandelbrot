@@ -55,3 +55,5 @@ run-site: make-site
 	open http://localhost:8000 &
 	python3 -m http.server --directory site/dist
 
+deploy:
+	ssh csokavar.hu "cd /var/www/csokavar/mandelbrot; git pull"
