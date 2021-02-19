@@ -5,8 +5,8 @@
 <head lang="hu">
     <meta property="og:title" content="Mandelbrot">
     <meta property="og:description" content="Mandelbrot set on vintage hardware">
-    <meta property="og:image" content="https://csokavar.hu/projects/mandelbrot/images/screenshot.png">
-    <meta property="og:url" content="https://csokavar.hu/projects/mandelbrot/index.html">
+    <meta property="og:image" content="https://csokavar.hu/projects/mandelbrot/images/x86-screenshot.png">
+    <meta property="og:url" content="https://csokavar.hu/projects/mandelbrot/x86.html">
     <meta name="twitter:card" content="summary_large_image">
 
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -30,7 +30,7 @@
         <article>
             <h1>x86 adventures | <a href="bin/boot.img">download</a> | <a href="https://github.com/encse/mandelbrot/tree/master/x86">source</a></h1>
 <p>Let's jump a few years. This little demo shows a x86 emulator in webassembly. The thing would be about 1000x faster in a decent emulator, but it should be fine for our demonstration purposes. If you want the full experience, download the <a href="bin/boot.img">floppy image</a> and drop it into your favourite emulator or a real PC.</p>
-<p><img src="images/screenshot.png" alt="screenshot"></p>
+<p><img src="images/x86-screenshot.png" alt="screenshot"></p>
 <h2>First steps</h2>
 <p>I always wanted to write my own boot loader. (In fact this is what inspired the whole Manderbrot saga.) It looks so cryptic and hardcore, isn't it? How does a PC start?</p>
 <p>Back in the days (before UEFI) when a PC was booting it started to look around on the storage devices for something that looked like a 'boot sector'. It was loading the first sector (512 bytes) from each disk and if a sector ended with the magic bytes <code>0xAA55</code> it supposed that it's a boot sector. It loaded it into a specified place in memory and just executed it. What could go wrong?</p>

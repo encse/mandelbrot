@@ -30,9 +30,6 @@ all:
 	@echo "\033[32m====== Building x86 target ======\033[39;49m"
 	make -C x86 all
 
-	make make-site
-
-make-site:
 	@echo ''
 	@echo "\033[32m====== Building the site ======\033[39;49m"
 	
@@ -44,14 +41,13 @@ make-site:
 
 	npm run build --prefix site
 
-
 run-c64:
 	make -C c64 run
 
 run-x86:
 	make -C x86 run
 
-run-site: make-site
+run-site: all
 	open http://localhost:8000 &
 	python3 -m http.server --directory site/dist
 

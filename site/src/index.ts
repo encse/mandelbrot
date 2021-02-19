@@ -17,16 +17,20 @@ for (let item of fs.readdirSync(inputDir)) {
                 .substring(0, 7);
 
     if (item.endsWith('.md')) {
+        const file = item.replace("md", "html");
+        const id = item.replace(".md", "").toLowerCase();
+
         const fpatIn = path.join(inputDir, item);
-        const fpatOut = path.join(outputDir, item).replace("md", "html");
+        const fpatOut = path.join(outputDir, file);
         const md = MarkdownIt({
             html: true
         });
         
         const {metadata, content} = metadataParse(fs.readFileSync(fpatIn, "utf-8"));
 
-
         const args = {
+            screenshot: `images/${id}-screenshot.png`,
+            file: file,
             content: md.render(content),
             css_version: css_version,
             nav_index: "",
@@ -36,7 +40,7 @@ for (let item of fs.readdirSync(inputDir)) {
             scripts: (metadata["scripts"]??[]).map(script => `<script src="${script}"></script>`).join("\n\t")
         }
 
-        args["nav_"+item.replace(".md", "").toLowerCase()] = "active";
+        args["nav_"+id] = "active";
         
 
         let template = fs.readFileSync("template.html", "utf-8");

@@ -1,7 +1,7 @@
 
 # Mandelbrot in a bootloader
 
-![screenshot](../site/dist/images/screenshot.png)
+![screenshot](../site/dist/images/x86-screenshot.png)
 
 ## Build and run
 
