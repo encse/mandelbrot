@@ -10,7 +10,7 @@
     <meta name="twitter:card" content="summary_large_image">
 
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link href="app.css?v=a1bff5c" type="text/css" rel="stylesheet" media="all" />
+    <link href="app.css?v=479aca8" type="text/css" rel="stylesheet" media="all" />
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Monoton&display=swap" rel="stylesheet">
     <script src="scripts/mandelbrot_c64.js"></script>
@@ -22,7 +22,7 @@
     </header>
     <main>
         <nav>
-            <a href="index.html" class=""/>Mandelbrot</a>
+            <a href="index.html" class=""/>Introduction</a>
             <a href="c64.html" class="active"/>C64</a>
             <a href="x86.html" class=""/>x86</a>
         </nav>
@@ -41,7 +41,18 @@ CMD4
 <p>After this I could just use the regular <code>PRINT</code> routines to trace my variables and compare it to the reference implementation.</p>
 <p>I found a few places where the multiplication returned bad results. I went through the code a couple of times, but it took me an hour until I found that my Mandelbrot drawer is using the same memory locations for its local variables as the multiplication routine for its helper tables...</p>
 <p>So I essentially overwrote things like 100 * 100 = 10000 with some garbage... (The reality is a bit more tricky as it's not directly storing 100*100, but you get the idea.)</p>
-<p>Anyway, once it was fixed, it really started to look like a Mandelbrot set. If you have a C64 at home, here is the <a href="bin/mandelbrot.d64">floppy image</a>. I would be really happy if someone could try this on real hardware and shared a few pictures of the setup with me.</p>
+<p>Anyway, once it was fixed, it really started to look like a Mandelbrot set.</p>
+<h2>Real hardware</h2>
+<p>Using my proven tactic, I went to reddit and asked around a bit for help. A few hours later, fellow reddit user <a href="https://www.reddit.com/user/pskipw/">u/pskipw</a> created a few pictures for me. Here is one:</p>
+<p><img src="images/pskipw-c64.jpg" alt="pskipw-c64.jpg">
+Source: <a href="https://imgur.com/a/ogF4kFR">https://imgur.com/a/ogF4kFR</a></p>
+<p>I have never heared about it, but the C64 had a portable version as well, called the SX-64. <a href="https://www.reddit.com/user/eventhorizonrocket/">u/eventhorizonrocket</a> shot this:</p>
+<p><img src="images/eventhorizonrocket-sx64.jpg" alt="eventhorizonrocket-sx64.jpg">
+Source: <a href="https://imgur.com/a/MxnhAKi">https://imgur.com/a/MxnhAKi</a></p>
+<p>A close up from <a href="https://www.reddit.com/user/conventionalmemories/">u/conventionalmemories</a>:</p>
+<p><img src="images/conventionalmemories-sx64.jpg" alt="conventionalmemories-sx64.jpg">
+Source: <a href="https://imgur.com/gallery/SWjcJBm">https://imgur.com/gallery/SWjcJBm</a></p>
+<p>Interestingly the background color on these doesn't match the screen border color, but I have no idea why.</p>
 
         </article>
     </main>

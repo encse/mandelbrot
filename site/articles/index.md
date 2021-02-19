@@ -1,6 +1,6 @@
-# Mandelbrot
+# Introduction
 
-I grew up in the 1980s and was surrounded by computers almost from the beginning. We lived in Hungary behind the iron curtain and were really lucky as it was extraordinary if someone had a PC at home. Only a few of my classmates had heard about computers at all, let alone had seen one. We had a Commodore VIC-20 and I started to program at the age of 10. A dream came true when I got a my Commodore 64 in 1991.
+I grew up in the 1980s and was surrounded by computers almost from the beginning. We lived in Hungary behind the iron curtain and were really lucky as it was extraordinary if someone had a PC at home. Only a few of my classmates heared about computers at all, let alone saw one. We had a Commodore VIC-20 and I started to program at the age of 10. A dream came true when I got a my Commodore 64 in 1991.
 
 By the end of the 1980s the C64 became the de facto gaming machine amongst my friends. Games came mostly from pirated sources with the demo screens of warez groups offering unlimited lives, invulnerability and infinite ammo. Those were completely different times...
 
