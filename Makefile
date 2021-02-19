@@ -51,3 +51,7 @@ run-c64:
 run-x86:
 	make -C x86 run
 
+run-site: make-site
+	open http://localhost:8000 &
+	python3 -m http.server --directory site/dist
+

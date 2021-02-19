@@ -33,7 +33,7 @@ canvas {
 }
 
 header {
-    padding-top: 64px
+    padding-top: 64px;
 }
 
 header h1 {
@@ -74,6 +74,9 @@ article h1, article h2 {
     padding-top: 32px;
 }
 
+footer {
+    padding-bottom: 64px;
+}
 footer img {
     position: relative;
     top: 5px;
