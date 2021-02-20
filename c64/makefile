@@ -16,4 +16,3 @@ run: mandelbrot.prg
 	@echo "\033[32mStarting up Vice emulator.... Ctrl+C to exit\033[39;49m"
 
 	x64sc --silent -warp  -iecdevice4 -device4 1 -pr4drv ascii -pr4output text -pr4txtdev 0 -prtxtdev1 test_output mandelbrot.prg 
-	

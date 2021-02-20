@@ -61,10 +61,6 @@ main {
 	background-repeat: repeat-x;
 }
 
-pre {
-    color: #ffcc00;
-    padding: 16px;
-}
 article h1, article h2, article p {
 	margin: 16px 0;
 }
@@ -102,12 +98,12 @@ nav .active {
     background: gray;
 }
 
+
 pre {
-    background: #d5d5d5;
-    border: 1px solid black;
+    background: black;
+    border: 2px solid #3b3535;
     border-radius: 8px;
     margin: 16px;
+    padding: 16px;
 }
-pre * {
-    color: black;
 }

@@ -10,7 +10,7 @@
     <meta name="twitter:card" content="summary_large_image">
 
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link href="app.css?v=8ff6dfc" type="text/css" rel="stylesheet" media="all" />
+    <link href="app.css?v=2f50801" type="text/css" rel="stylesheet" media="all" />
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Monoton&display=swap" rel="stylesheet">
     <script src="scripts/mandelbrot_c64.js"></script>
@@ -28,31 +28,34 @@
         </nav>
         <article>
             <h1>C64 adventures | <a href="bin/mandelbrot.d64">download</a> | <a href="https://github.com/encse/mandelbrot/tree/master/c64">source</a></h1>
-<p>I started with installing the ACME assembler and the VICE emulator for the Commodore 64. Spent some time getting familiar with the assembly language. It wasn't totally knew, but not because my childhood, I only used BASIC then. I learned a lot about the 65xx processors when I wrote a NES emulator a few years ago. That family was quite common in the 1980s, many Commodore machines and also the Apple ][ used that.</p>
+<p>I started with installing the ACME assembler and the VICE emulator for the Commodore 64. Spent some time getting familiar with the assembly language. It wasn't totally new, but not because of my childhood, I only used BASIC then.
+I learned a lot about the 65xx processors when I wrote a NES emulator a few years ago. That family was quite
+common in the 1980s, many Commodore machines and also the Apple ][ used that.</p>
 <p><img src="images/c64-screenshot.png" alt="screenshot"></p>
-<p>The biggest obtacle to be defated is that the C64 doesn't a have a multiplication operation. It can add and subtract numbers, but no multiplication (and division). One has two options: either using the floating point routines that come with the C64 BASIC interpreter or implement them by hand. There are various sources with assembly snippets around, and after I realised that the floating point arithmetic is unbearably slow for my purposes I decided to switch to 16 bit fixed point arithmetic (with 8 bit for the fraction part) and pulled in some routines from <a href="https://codebase64.org/">https://codebase64.org/</a>.</p>
-<p>It didn't work of course... The output resembled to the Mandelbrot set but was kind of well...</p>
+<p>The biggest obstacle on the C64 is the lack of multiplication. It can add and subtract numbers, but not multiply (or divise). One has two options: either using the floating point routines that come with the C64 BASIC interpreter or implement them by hand. There are various sources with assembly snippets around, and after I realised that the floating point arithmetic is unbearably slow for my purposes I decided to switch to 16 bit fixed point arithmetic (with 8 bit for the fraction part) and pulled in some routines from <a href="https://codebase64.org/">https://codebase64.org/</a>.</p>
+<p>It didn't work of course... The output resembled the Mandelbrot set but was kind of well...</p>
 <p><img src="images/mandelbrot-fail.png" alt="mandelbrot-fail"></p>
-<p>Now how do I debug this thing? I wrote a few assembly routines and tried the arithmetic for a few examples, but it looked all good. There are so many places to screw it up....</p>
+<p>Now how do I debug this thing? I wrote a few assembly routines and tried the arithmetic on a few examples,
+but it looked all good. There are so many places to screw it up....</p>
 <p>I quickly created a reference implementation in Javascript with Html canvas so that I know what to expect, but it was just fine. 16 bit is definitely enough. Finally, after some pondering I figured that I could redirect the standard output of the C64 to the printer, and redirect the printer from the emulator to a file. The magic commands are:</p>
 <pre><code>OPEN4,4
 CMD4
 </code></pre>
-<p>After this I could just use the regular <code>PRINT</code> routines to trace my variables and compare it to the reference implementation.</p>
-<p>I found a few places where the multiplication returned bad results. I went through the code a couple of times, but it took me an hour until I found that my Mandelbrot drawer is using the same memory locations for its local variables as the multiplication routine for its helper tables...</p>
-<p>So I essentially overwrote things like 100 * 100 = 10000 with some garbage... (The reality is a bit more tricky as it's not directly storing 100*100, but you get the idea.)</p>
+<p>I could just call the regular <code>PRINT</code> routines to trace my variables and compare it to the reference implementation.</p>
+<p>I found a few places where the multiplication returned bad results. Went through the code a couple of times, but it took me an hour until I found that my Mandelbrot drawer is using the same memory locations for its local variables as the multiplication routine for the helper tables...</p>
+<p>I essentially overwrote things like 100 * 100 = 10000 with some garbage... (The reality is a bit more tricky as it's not directly storing 100* 1 00, but you get the idea.)</p>
 <p>Anyway, once it was fixed, it really started to look like a Mandelbrot set.</p>
 <h2>Real hardware</h2>
-<p>Using my proven tactic, I went to reddit and asked around for help. A few hours later, fellow reddit user <a href="https://www.reddit.com/user/pskipw/">u/pskipw</a> created a few pictures for me. Here is one:</p>
+<p>Using my proven tactic, I went to reddit and asked around for help. A few hours later fellow reddit user <a href="https://www.reddit.com/user/pskipw/">u/pskipw</a> created a few pictures for me. Here is one:</p>
 <p><img src="images/pskipw-c64.jpg" alt="pskipw-c64.jpg">
 Source: <a href="https://imgur.com/a/ogF4kFR">https://imgur.com/a/ogF4kFR</a></p>
-<p>I have never heared about it, but the C64 had a portable version as well, called the SX-64. <a href="https://www.reddit.com/user/eventhorizonrocket/">u/eventhorizonrocket</a> shot this. It takes about 5 minutes to render:</p>
+<p>I have never heard about it, but the C64 had a portable version as well, called the SX-64. <a href="https://www.reddit.com/user/eventhorizonrocket/">u/eventhorizonrocket</a> shot this. It takes about 5 minutes to render:</p>
 <p><img src="images/eventhorizonrocket-sx64.jpg" alt="eventhorizonrocket-sx64.jpg">
 Source: <a href="https://imgur.com/a/MxnhAKi">https://imgur.com/a/MxnhAKi</a></p>
 <p>A close up from <a href="https://www.reddit.com/user/conventionalmemories/">u/conventionalmemories</a>:</p>
 <p><img src="images/conventionalmemories-sx64.jpg" alt="conventionalmemories-sx64.jpg">
 Source: <a href="https://imgur.com/gallery/SWjcJBm">https://imgur.com/gallery/SWjcJBm</a></p>
-<p>Interestingly the background color on these doesn't match the screen border color, but I have no idea why.</p>
+<p>The colors are different because the SX-64 has different color settings after startup than the C64 and I didn't count with that.</p>
 
         </article>
     </main>
