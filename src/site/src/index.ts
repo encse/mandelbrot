@@ -3,8 +3,8 @@ import path from 'path';
 import MarkdownIt from 'markdown-it'
 import metadataParse from 'markdown-yaml-metadata-parser';
 import sha256 from 'fast-sha256';
-const inputDir = "articles"
-const outputDir = "dist"
+const inputDir = "../articles"
+const outputDir = "../../docs"
 
 for (let item of fs.readdirSync(inputDir)) {
     if(item.startsWith(".")){
@@ -12,7 +12,7 @@ for (let item of fs.readdirSync(inputDir)) {
     }
 
     const css_version = Buffer
-                .from(sha256(fs.readFileSync(path.join('dist', 'app.css'))))
+                .from(sha256(fs.readFileSync(path.join(outputDir, 'app.css'))))
                 .toString('hex')
                 .substring(0, 7);
 
@@ -43,7 +43,7 @@ for (let item of fs.readdirSync(inputDir)) {
         args["nav_"+id] = "active";
         
 
-        let template = fs.readFileSync("template.html", "utf-8");
+        let template = fs.readFileSync("src/template.html", "utf-8");
 
         
         for(let key of Object.keys(args)){
