@@ -32,7 +32,7 @@
 I learned a lot about the 65xx processors when I wrote a NES emulator a few years ago. That family was quite
 common in the 1980s, many Commodore machines and also the Apple ][ used that.</p>
 <p><img src="images/c64-screenshot.png" alt="screenshot"></p>
-<p>The biggest obstacle on the C64 is the lack of multiplication. It can add and subtract numbers, but not multiply (or divise). One has two options: either using the floating point routines that come with the C64 BASIC interpreter or implement them by hand. There are various sources with assembly snippets around, and after I realised that the floating point arithmetic is unbearably slow for my purposes I decided to switch to 16 bit fixed point arithmetic (with 8 bit for the fraction part) and pulled in some routines from <a href="https://codebase64.org/">https://codebase64.org/</a>.</p>
+<p>The biggest obstacle on the C64 is the lack of multiplication. It can add and subtract numbers, but not multiply (or divide). One has two options: either using the floating point routines that come with the C64 BASIC interpreter or implement them by hand. There are various sources with assembly snippets around, and after I realised that the floating point arithmetic is unbearably slow for my purposes I decided to switch to 16 bit fixed point arithmetic (with 8 bit for the fraction part) and pulled in some routines from <a href="https://codebase64.org/">https://codebase64.org/</a>.</p>
 <p>It didn't work of course... The output resembled the Mandelbrot set but was kind of well...</p>
 <p><img src="images/mandelbrot-fail.png" alt="mandelbrot-fail"></p>
 <p>Now how do I debug this thing? I wrote a few assembly routines and tried the arithmetic on a few examples,
