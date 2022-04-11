@@ -1,6 +1,6 @@
 # Mandelbrot for the C64
 
-![screenshot](../site/dist/images/c64-screenshot.png)
+![screenshot](../../docs/images/c64-screenshot.png)
 
 ## Build and run
 
