@@ -9,6 +9,6 @@ But things had changed, and the Commodore and ZX Spectrum machines phased out as
 
 I often find myself nostalgic about those times and decided to learn more about the details of the ancient machines. 
 
-What could be a better project than a Mandelbrot drawer? It's visual, looks great, everyone knows it, and it's complex enough (it's about complex numbers after all).
+What could be a better project than a Mandelbrot drawer? It's visual, looks great, everyone knows it, and it's complex enough (pun intended).
 
 I plan to implement it on various platforms. Right now I have a C64 and an x86 version. I want to travel back some more to the PDP-1 or IBM 1401 era, or even to the ENIAC, but we will see how it goes...
