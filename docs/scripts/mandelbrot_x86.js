@@ -20,14 +20,17 @@ window.onload = function () {
     canvas.style.width = "320px";
     canvas.style.height = "200px";
 
-    div.appendChild(canvas);
+    const divEmulator = document.createElement("div");
+    divEmulator.appendChild( document.createElement("div"));
+    divEmulator.appendChild(canvas);
+    div.appendChild(divEmulator);
 
 
     const emulator = new V86Starter({
         wasm_path: "scripts/v86/v86.wasm",
         memory_size: 1 * 1024 * 1024,
         vga_memory_size: 1 * 1024 * 1024,
-        screen_container: document.getElementById("screen_container"),
+        screen_container: divEmulator,
         bios: {
             url: "scripts/v86/seabios.bin",
         },
