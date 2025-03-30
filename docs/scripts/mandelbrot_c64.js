@@ -7,6 +7,9 @@ window.onload = async function () {
         return;
     }
 
+    const response = await fetch('bin/mandelbrot.d64');
+    const bytes = new Uint8Array(await response.arrayBuffer());
+
     const div = document.createElement("div");
     div.id = "screen_container";
     screenshot.parentElement.insertAdjacentElement("beforebegin", div);
@@ -21,9 +24,6 @@ window.onload = async function () {
     canvas.style.width = "640px";
     canvas.style.height = "480px";
     div.appendChild(canvas);
-
-    const response = await fetch('bin/mandelbrot.d64');
-    const bytes = new Uint8Array(await response.arrayBuffer());
 
     function loadFiles() {
         screenshot.style.display = "none";
